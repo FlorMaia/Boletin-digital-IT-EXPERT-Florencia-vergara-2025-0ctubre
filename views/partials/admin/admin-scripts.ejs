@@ -1,0 +1,2519 @@
+<script>
+    let currentPage = 1;
+    let currentSearch = '';
+    let currentRoleFilter = '';
+
+    // ========================================
+    // FUNCIÓN DE RECARGA AUTOMÁTICA
+    // ========================================
+    function reloadCurrentView() {
+        console.log('🔄 Recargando vista actual...');
+        
+        // Usar el contexto global para determinar qué vista recargar
+        const contexto = window.estructuraData.contexto;
+        console.log('📊 Contexto actual:', JSON.stringify(contexto));
+        
+        switch(contexto.vistaActual) {
+            case 'modalidades':
+                console.log('🏫 Recargando vista de modalidades');
+                loadModalidades();
+                break;
+                
+            case 'niveles':
+                if (contexto.modalidadId) {
+                    console.log('📚 Recargando niveles para modalidad:', contexto.modalidadId);
+                    loadNivelesForModalidad(contexto.modalidadId);
+                } else {
+                    // Intentar obtener modalidadId del DOM como respaldo
+                    const nivelesView = document.getElementById('niveles-view');
+                    if (nivelesView && nivelesView.hasAttribute('data-modalidad-id')) {
+                        const modalidadId = parseInt(nivelesView.getAttribute('data-modalidad-id'));
+                        console.log('🔍 Usando modalidadId del DOM:', modalidadId);
+                        loadNivelesForModalidad(modalidadId);
+                    } else {
+                        console.warn('⚠️ No se encontró modalidadId, recargando todos los niveles');
+                        loadNiveles();
+                    }
+                }
+                break;
+                
+            case 'divisiones':
+                if (contexto.nivelId) {
+                    console.log('📐 Recargando divisiones para nivel:', contexto.nivelId);
+                    loadDivisionesForNivel(contexto.nivelId);
+                } else {
+                    // Intentar obtener nivelId del DOM como respaldo
+                    const divisionesView = document.getElementById('divisiones-view');
+                    if (divisionesView && divisionesView.hasAttribute('data-nivel-id')) {
+                        const nivelId = parseInt(divisionesView.getAttribute('data-nivel-id'));
+                        console.log('🔍 Usando nivelId del DOM:', nivelId);
+                        loadDivisionesForNivel(nivelId);
+                    } else {
+                        console.warn('⚠️ No se encontró nivelId, recargando todas las divisiones');
+                        loadDivisiones();
+                    }
+                }
+                break;
+                
+            default:
+                console.log('🏫 Vista no reconocida, recargando modalidades por defecto');
+                loadModalidades();
+                break;
+        }
+        
+        // Recargar estadísticas siempre
+        loadEstructuraStats();
+    }
+
+    // ========================================
+    // NAVEGACIÓN POR PESTAÑAS
+    // ========================================
+    function showTab(tabName) {
+        // Ocultar todos los contenidos
+        document.querySelectorAll('.tab-content').forEach(tab => {
+            tab.classList.remove('active');
+        });
+        
+        // Remover clase active de todos los enlaces
+        document.querySelectorAll('.sidebar .nav-link').forEach(link => {
+            link.classList.remove('active');
+        });
+        
+        // Mostrar contenido activo
+        document.getElementById(tabName + '-content').classList.add('active');
+        
+        // Marcar enlace activo
+        event.target.classList.add('active');
+        
+        // Limpiar caché de datos al cambiar de pestaña
+        if (tabName === 'academico') {
+            // Limpiar datos en memoria para forzar recarga fresca
+            console.log('🧹 Limpiando caché de datos académicos al cambiar a pestaña académica');
+            window.estructuraData = {
+                modalidades: [],
+                niveles: [],
+                divisiones: [],
+                contexto: {
+                    vistaActual: 'modalidades',
+                    modalidadId: null,
+                    modalidadNombre: '',
+                    nivelId: null,
+                    nivelNombre: ''
+                },
+                getNivelesPorModalidad: window.estructuraData?.getNivelesPorModalidad,
+                getDivisionesPorNivel: window.estructuraData?.getDivisionesPorNivel,
+                actualizarContexto: window.estructuraData?.actualizarContexto
+            };
+        }
+        
+        // Cargar datos específicos del tab
+        switch(tabName) {
+            case 'usuarios':
+                loadUsers();
+                break;
+            case 'academico':
+                loadAcademicStructure();
+                break;
+            case 'materias':
+                loadMaterias();
+                break;
+            case 'asignaciones':
+                loadAsignaciones();
+                break;
+        }
+    }
+
+    // ========================================
+    // GESTIÓN DE USUARIOS
+    // ========================================
+    async function loadUsers(page = 1) {
+        currentPage = page;
+        document.getElementById('users-loading').style.display = 'block';
+        document.getElementById('users-table').style.display = 'none';
+        document.getElementById('pagination-container').style.display = 'none';
+
+        try {
+            // Cargar usuarios con paginación
+            const response = await fetch(`/admin/users?page=${page}&search=${currentSearch}&role=${currentRoleFilter}`);
+            const data = await response.json();
+
+            // Cargar estadísticas totales reales del servidor
+            await loadRealStats();
+
+            displayUsers(data.usuarios);
+            displayPagination(data.pagination);
+
+            document.getElementById('users-loading').style.display = 'none';
+            document.getElementById('users-table').style.display = 'block';
+            document.getElementById('pagination-container').style.display = 'block';
+
+        } catch (error) {
+            console.error('Error cargando usuarios:', error);
+            document.getElementById('users-loading').innerHTML = '<p class="text-danger">Error al cargar usuarios</p>';
+        }
+    }
+
+    async function loadRealStats() {
+        try {
+            const response = await fetch('/admin/stats');
+            const stats = await response.json();
+            
+            document.getElementById('total-usuarios').textContent = stats.total_usuarios || 0;
+            document.getElementById('total-estudiantes').textContent = stats.total_estudiantes || 0;
+            document.getElementById('total-profesores').textContent = stats.total_profesores || 0;
+            document.getElementById('total-admins').textContent = stats.total_admins || 0;
+        } catch (error) {
+            console.error('Error cargando estadísticas:', error);
+        }
+    }
+
+    function displayUsers(usuarios) {
+        const tbody = document.getElementById('users-tbody');
+        tbody.innerHTML = '';
+
+        if (usuarios.length === 0) {
+            document.getElementById('no-users').style.display = 'block';
+            return;
+        }
+
+        document.getElementById('no-users').style.display = 'none';
+
+        usuarios.forEach(user => {
+            const roleClass = user.role === 'student' ? 'bg-primary' : 
+                            user.role === 'profesor' ? 'bg-success' : 'bg-danger';
+            const roleName = user.role === 'student' ? '📚 Estudiante' : 
+                           user.role === 'profesor' ? '👨‍🏫 Profesor' : '🛡️ Admin';
+
+            tbody.innerHTML += `
+                <tr>
+                    <td>
+                        <div class="d-flex align-items-center">
+                            <div class="user-avatar me-2">
+                                <i class="bi bi-person-circle text-muted" style="font-size: 2rem;"></i>
+                            </div>
+                            <div>
+                                <strong class="text-dark">${user.first_name} ${user.last_name}</strong>
+                                <br><small class="text-muted">
+                                    <i class="bi bi-envelope me-1"></i>${user.email}
+                                </small>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <span class="badge bg-light text-dark">${user.dni || 'Sin DNI'}</span>
+                    </td>
+                    <td>
+                        <span class="badge ${roleClass} badge-role">${roleName}</span>
+                    </td>
+                    <td>
+                        <small class="text-muted">
+                            ${user.curso ? 
+                                `<i class="bi bi-book me-1"></i>${user.curso}` : 
+                                '<i class="bi bi-dash"></i> Sin curso'
+                            }
+                        </small>
+                    </td>
+                    <td class="text-center">
+                        <div class="btn-group" role="group">
+                            <button class="btn btn-sm btn-outline-primary" 
+                                    onclick="editUser(${user.id})" 
+                                    title="Editar usuario">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger" 
+                                    onclick="showDeleteUserModal(${user.id}, '${user.first_name} ${user.last_name}')" 
+                                    title="Eliminar usuario">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        });
+    }
+
+
+
+    function displayPagination(pagination) {
+        const paginationEl = document.getElementById('pagination');
+        const infoEl = document.getElementById('pagination-info');
+        
+        paginationEl.innerHTML = '';
+        
+        // Botón anterior
+        if (pagination.hasPrev) {
+            paginationEl.innerHTML += `
+                <li class="page-item">
+                    <a class="page-link" href="#" onclick="loadUsers(${pagination.currentPage - 1})">Anterior</a>
+                </li>
+            `;
+        }
+        
+        // Números de página
+        for (let i = Math.max(1, pagination.currentPage - 2); 
+             i <= Math.min(pagination.totalPages, pagination.currentPage + 2); 
+             i++) {
+            const active = i === pagination.currentPage ? 'active' : '';
+            paginationEl.innerHTML += `
+                <li class="page-item ${active}">
+                    <a class="page-link" href="#" onclick="loadUsers(${i})">${i}</a>
+                </li>
+            `;
+        }
+        
+        // Botón siguiente
+        if (pagination.hasNext) {
+            paginationEl.innerHTML += `
+                <li class="page-item">
+                    <a class="page-link" href="#" onclick="loadUsers(${pagination.currentPage + 1})">Siguiente</a>
+                </li>
+            `;
+        }
+        
+        // Información de paginación
+        infoEl.textContent = `Página ${pagination.currentPage} de ${pagination.totalPages} - Total: ${pagination.totalUsers} usuarios`;
+    }
+
+    function searchUsers() {
+        currentSearch = document.getElementById('search-input').value;
+        currentRoleFilter = document.getElementById('role-filter').value;
+        loadUsers(1);
+    }
+
+    function showCreateUserModal() {
+        document.getElementById('userModalTitle').innerHTML = 
+            '<i class="bi bi-person-plus me-2"></i>Crear Usuario';
+        document.getElementById('userForm').reset();
+        document.getElementById('userId').value = '';
+        document.getElementById('passwordField').style.display = 'block';
+        document.getElementById('password').required = true;
+        document.getElementById('passwordEditText').style.display = 'none';
+        document.getElementById('saveButtonText').textContent = 'Guardar';
+        
+        // Limpiar validaciones previas
+        clearFormValidation();
+        
+        new bootstrap.Modal(document.getElementById('userModal')).show();
+    }
+
+    function clearSearch() {
+        document.getElementById('search-input').value = '';
+        document.getElementById('role-filter').value = '';
+        document.getElementById('sort-filter').value = 'name';
+        searchUsers();
+    }
+
+    function clearFormValidation() {
+        const form = document.getElementById('userForm');
+        form.classList.remove('was-validated');
+        form.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+        form.querySelectorAll('.is-valid').forEach(el => el.classList.remove('is-valid'));
+    }
+
+    function togglePasswordVisibility() {
+        const passwordField = document.getElementById('password');
+        const toggleIcon = document.getElementById('passwordToggleIcon');
+        
+        if (passwordField.type === 'password') {
+            passwordField.type = 'text';
+            toggleIcon.classList.remove('bi-eye');
+            toggleIcon.classList.add('bi-eye-slash');
+        } else {
+            passwordField.type = 'password';
+            toggleIcon.classList.remove('bi-eye-slash');
+            toggleIcon.classList.add('bi-eye');
+        }
+    }
+
+    async function editUser(userId) {
+        try {
+            const response = await fetch(`/admin/users/${userId}`);
+            if (!response.ok) throw new Error('Usuario no encontrado');
+            
+            const user = await response.json();
+            
+            // Llenar el formulario con los datos del usuario
+            document.getElementById('userModalTitle').innerHTML = 
+                '<i class="bi bi-pencil me-2"></i>Editar Usuario';
+            document.getElementById('userId').value = user.id;
+            document.getElementById('firstName').value = user.first_name;
+            document.getElementById('lastName').value = user.last_name;
+            document.getElementById('email').value = user.email;
+            document.getElementById('dni').value = user.dni || '';
+            document.getElementById('role').value = user.role;
+            document.getElementById('curso').value = user.curso || '';
+            
+            // Modificar el campo de contraseña para edición
+            document.getElementById('password').required = false;
+            document.getElementById('password').value = '';
+            document.getElementById('passwordEditText').style.display = 'inline';
+            
+            // Cambiar texto del botón
+            document.getElementById('saveButtonText').textContent = 'Actualizar';
+            
+            // Mostrar modal
+            new bootstrap.Modal(document.getElementById('userModal')).show();
+            
+        } catch (error) {
+            console.error('Error cargando usuario:', error);
+            alert('Error al cargar los datos del usuario');
+        }
+    }
+
+    let userToDelete = null;
+
+    function showDeleteUserModal(userId, userName) {
+        userToDelete = { id: userId, name: userName };
+        document.getElementById('deleteUserName').textContent = userName;
+        new bootstrap.Modal(document.getElementById('deleteUserModal')).show();
+    }
+
+    async function confirmDeleteUser() {
+        if (!userToDelete) return;
+        
+        try {
+            const response = await fetch(`/admin/users/${userToDelete.id}`, {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            
+            if (response.ok) {
+                showNotification(`Usuario ${userToDelete.name} eliminado exitosamente`, 'success');
+                bootstrap.Modal.getInstance(document.getElementById('deleteUserModal')).hide();
+                loadUsers(currentPage);
+            } else {
+                const error = await response.json();
+                showNotification(error.message || 'Error al eliminar el usuario', 'error');
+            }
+        } catch (error) {
+            console.error('Error eliminando usuario:', error);
+            showNotification('Error al eliminar el usuario', 'error');
+        }
+        
+        userToDelete = null;
+    }
+
+    async function saveUser() {
+        const form = document.getElementById('userForm');
+        const userId = document.getElementById('userId').value;
+        const isEdit = userId !== '';
+        
+        // Validar formulario
+        if (!validateForm()) {
+            return;
+        }
+        
+        const userData = {
+            firstName: document.getElementById('firstName').value.trim(),
+            lastName: document.getElementById('lastName').value.trim(),
+            email: document.getElementById('email').value.trim(),
+            dni: document.getElementById('dni').value.trim(),
+            role: document.getElementById('role').value,
+            curso: document.getElementById('curso').value.trim()
+        };
+
+        // Solo incluir contraseña si no está vacía o si es nuevo usuario
+        const password = document.getElementById('password').value;
+        if (password || !isEdit) {
+            userData.password = password;
+        }
+
+        try {
+            const url = isEdit ? `/admin/users/${userId}` : '/admin/users';
+            const method = isEdit ? 'PUT' : 'POST';
+            
+            const response = await fetch(url, {
+                method: method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(userData)
+            });
+            
+            const result = await response.json();
+            
+            if (response.ok) {
+                const message = isEdit ? 'Usuario actualizado exitosamente' : 'Usuario creado exitosamente';
+                showNotification(message, 'success');
+                bootstrap.Modal.getInstance(document.getElementById('userModal')).hide();
+                loadUsers(currentPage);
+            } else {
+                showNotification(result.error || 'Error al guardar usuario', 'error');
+            }
+        } catch (error) {
+            console.error('Error guardando usuario:', error);
+            showNotification('Error al guardar usuario', 'error');
+        }
+    }
+
+    function validateForm() {
+        const form = document.getElementById('userForm');
+        let isValid = true;
+        
+        // Limpiar validaciones previas
+        clearFormValidation();
+        
+        // Validar campos requeridos
+        const requiredFields = ['firstName', 'lastName', 'email', 'dni', 'role'];
+        requiredFields.forEach(fieldId => {
+            const field = document.getElementById(fieldId);
+            if (!field.value.trim()) {
+                field.classList.add('is-invalid');
+                isValid = false;
+            } else {
+                field.classList.add('is-valid');
+            }
+        });
+        
+        // Validar email
+        const email = document.getElementById('email');
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (email.value && !emailRegex.test(email.value)) {
+            email.classList.add('is-invalid');
+            isValid = false;
+        }
+        
+        // Validar DNI
+        const dni = document.getElementById('dni');
+        const dniRegex = /^[0-9]{7,8}$/;
+        if (dni.value && !dniRegex.test(dni.value)) {
+            dni.classList.add('is-invalid');
+            isValid = false;
+        }
+        
+        // Validar contraseña solo si es nuevo usuario o si se ingresó algo
+        const password = document.getElementById('password');
+        const userId = document.getElementById('userId').value;
+        if ((!userId && !password.value) || (password.value && password.value.length < 6)) {
+            password.classList.add('is-invalid');
+            isValid = false;
+        }
+        
+        form.classList.add('was-validated');
+        return isValid;
+    }
+
+    function showNotification(message, type = 'info') {
+        // Crear notificación temporal
+        const notification = document.createElement('div');
+        notification.className = `alert alert-${type === 'error' ? 'danger' : type} alert-dismissible fade show position-fixed`;
+        notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+        
+        // Permitir HTML en el mensaje
+        notification.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
+        document.body.appendChild(notification);
+        
+        // Auto-remover después de 5 segundos
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.remove();
+            }
+        }, 5000);
+    }
+
+    // ========================================
+    // ESTRUCTURA ACADÉMICA MEJORADA
+    // ========================================
+    window.estructuraData = {
+        modalidades: [],
+        niveles: [],
+        divisiones: [],
+        // Nuevo: contexto actual para mantener el estado
+        contexto: {
+            vistaActual: 'modalidades', // 'modalidades', 'niveles', 'divisiones'
+            modalidadId: null,
+            modalidadNombre: '',
+            nivelId: null,
+            nivelNombre: ''
+        },
+        // Nuevos métodos para acceso seguro a datos filtrados
+        getNivelesPorModalidad: function(modalidadId) {
+            if (!modalidadId) return [];
+            const idNum = parseInt(modalidadId);
+            return this.niveles.filter(n => parseInt(n.modalidad_id) === idNum);
+        },
+        getDivisionesPorNivel: function(nivelId) {
+            if (!nivelId) return [];
+            const idNum = parseInt(nivelId);
+            return this.divisiones.filter(d => parseInt(d.nivel_id) === idNum);
+        },
+        // Método para actualizar el contexto
+        actualizarContexto: function(vista, modalidadId = null, modalidadNombre = '', nivelId = null, nivelNombre = '') {
+            this.contexto.vistaActual = vista;
+            if (modalidadId) this.contexto.modalidadId = parseInt(modalidadId);
+            if (modalidadNombre) this.contexto.modalidadNombre = modalidadNombre;
+            if (nivelId) this.contexto.nivelId = parseInt(nivelId);
+            if (nivelNombre) this.contexto.nivelNombre = nivelNombre;
+            console.log('🔄 Contexto actualizado:', JSON.stringify(this.contexto));
+        }
+    };
+
+    // ========================================
+    // FUNCIONES DE NAVEGACIÓN ENTRE VISTAS
+    // ========================================
+    
+    // Mostrar vista de modalidades
+    function showModalidadesView() {
+        console.log('📋 Mostrando vista de modalidades');
+        
+        // Actualizar contexto global
+        window.estructuraData.actualizarContexto('modalidades');
+        
+        // Ocultar todas las vistas
+        document.querySelectorAll('.estructura-view').forEach(view => {
+            view.style.display = 'none';
+        });
+        
+        // Mostrar vista de modalidades
+        const modalidadesView = document.getElementById('modalidades-view');
+        if (modalidadesView) {
+            modalidadesView.style.display = 'block';
+        }
+        
+        // Ocultar breadcrumb
+        const breadcrumb = document.getElementById('estructura-breadcrumb');
+        if (breadcrumb) {
+            breadcrumb.style.display = 'none';
+        }
+        
+        // Cargar modalidades frescas del servidor
+        loadModalidades();
+    }
+    
+    // Mostrar vista de niveles
+    function showNivelesView(modalidadId, modalidadNombre) {
+        console.log('📚 Mostrando niveles para modalidad:', modalidadNombre, 'ID:', modalidadId);
+        
+        // Validar parámetros
+        if (!modalidadId || !modalidadNombre) {
+            console.error('❌ Error: Se requiere ID y nombre de modalidad');
+            showNotification('Error al cargar niveles: Datos de modalidad incompletos', 'error');
+            return;
+        }
+        
+        // Convertir modalidadId a número para asegurar consistencia
+        const modalidadIdNumerico = parseInt(modalidadId);
+        if (isNaN(modalidadIdNumerico)) {
+            console.error('❌ Error: ID de modalidad inválido:', modalidadId);
+            showNotification('Error al cargar niveles: ID de modalidad inválido', 'error');
+            return;
+        }
+        
+        // Actualizar contexto global
+        window.estructuraData.actualizarContexto('niveles', modalidadIdNumerico, modalidadNombre);
+        
+        // Ocultar todas las vistas
+        document.querySelectorAll('.estructura-view').forEach(view => {
+            view.style.display = 'none';
+        });
+        
+        // Mostrar vista de niveles
+        const nivelesView = document.getElementById('niveles-view');
+        if (nivelesView) {
+            nivelesView.style.display = 'block';
+            
+            // Guardar datos en atributos para facilitar la recarga
+            nivelesView.setAttribute('data-modalidad-id', modalidadIdNumerico);
+            nivelesView.setAttribute('data-modalidad-nombre', modalidadNombre);
+        }
+        
+        // Actualizar título
+        const nivelesTitle = document.getElementById('niveles-title');
+        if (nivelesTitle) {
+            nivelesTitle.innerHTML = `<i class="bi bi-layers me-2 text-success"></i>Niveles de ${modalidadNombre}`;
+        }
+        
+        // Mostrar breadcrumb
+        const breadcrumb = document.getElementById('estructura-breadcrumb');
+        if (breadcrumb) {
+            breadcrumb.style.display = 'block';
+            breadcrumb.innerHTML = `
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item">
+                        <a href="#" onclick="showModalidadesView()" class="text-decoration-none">
+                            <i class="bi bi-mortarboard me-1"></i>Modalidades
+                        </a>
+                    </li>
+                    <li class="breadcrumb-item active" aria-current="page">
+                        <i class="bi bi-layers me-1"></i>${modalidadNombre}
+                    </li>
+                </ol>
+            `;
+        }
+        
+        // Cargar niveles filtrados por modalidad
+        loadNivelesForModalidad(modalidadIdNumerico);
+    }
+    
+    // Mostrar vista de divisiones
+    function showDivisionesView(nivelId, nivelNombre, modalidadNombre) {
+        console.log('📐 Mostrando divisiones para nivel:', nivelNombre, 'ID:', nivelId);
+        
+        // Verificar parámetros
+        if (!nivelId || !nivelNombre) {
+            console.error('❌ Error: Se requiere ID y nombre del nivel');
+            showNotification('Error al cargar divisiones: Datos de nivel incompletos', 'error');
+            return;
+        }
+        
+        // Convertir nivelId a número para asegurar consistencia
+        const nivelIdNumerico = parseInt(nivelId);
+        if (isNaN(nivelIdNumerico)) {
+            console.error('❌ Error: ID de nivel inválido:', nivelId);
+            showNotification('Error al cargar divisiones: ID de nivel inválido', 'error');
+            return;
+        }
+        
+        // Actualizar contexto global
+        window.estructuraData.actualizarContexto('divisiones', null, modalidadNombre, nivelIdNumerico, nivelNombre);
+        
+        // Ocultar todas las vistas
+        document.querySelectorAll('.estructura-view').forEach(view => {
+            view.style.display = 'none';
+        });
+        
+        // Mostrar vista de divisiones
+        const divisionesView = document.getElementById('divisiones-view');
+        if (divisionesView) {
+            divisionesView.style.display = 'block';
+        }
+        
+        // Actualizar título
+        const divisionesTitle = document.getElementById('divisiones-title');
+        if (divisionesTitle) {
+            divisionesTitle.innerHTML = `<i class="bi bi-grid-3x3 me-2 text-warning"></i>Divisiones de ${nivelNombre}`;
+        }
+        
+        // Mostrar breadcrumb
+        const breadcrumb = document.getElementById('estructura-breadcrumb');
+        if (breadcrumb) {
+            breadcrumb.style.display = 'block';
+            breadcrumb.innerHTML = `
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item">
+                        <a href="#" onclick="showModalidadesView()" class="text-decoration-none">
+                            <i class="bi bi-mortarboard me-1"></i>Modalidades
+                        </a>
+                    </li>
+                    <li class="breadcrumb-item">
+                        <a href="#" onclick="showNivelesView(${nivelIdNumerico}, '${modalidadNombre}')" class="text-decoration-none">
+                            <i class="bi bi-layers me-1"></i>${modalidadNombre}
+                        </a>
+                    </li>
+                    <li class="breadcrumb-item active" aria-current="page">
+                        <i class="bi bi-grid-3x3 me-1"></i>${nivelNombre}
+                    </li>
+                </ol>
+            `;
+        }
+        
+        // Guardar datos en atributos para facilitar la recarga
+        if (divisionesView) {
+            divisionesView.setAttribute('data-nivel-id', nivelIdNumerico);
+            divisionesView.setAttribute('data-nivel-nombre', nivelNombre);
+            divisionesView.setAttribute('data-modalidad-nombre', modalidadNombre);
+        }
+        
+        // Cargar divisiones filtradas por nivel
+        console.log('📊 Llamando a loadDivisionesForNivel con ID:', nivelIdNumerico);
+        loadDivisionesForNivel(nivelIdNumerico);
+    }
+
+    async function loadAcademicStructure() {
+        try {
+            console.log('Iniciando carga de estructura académica...');
+            
+            // Cargar estadísticas
+            await loadEstructuraStats();
+            
+            // Cargar datos iniciales para la primera pestaña (modalidades)
+            await loadModalidades();
+            
+            console.log('Estructura académica cargada exitosamente');
+            
+        } catch (error) {
+            console.error('Error cargando estructura académica:', error);
+        }
+    }
+
+    window.loadEstructuraStats = async function loadEstructuraStats() {
+        try {
+            const response = await fetch('/admin/estructura/stats');
+            const stats = await response.json();
+            
+            document.getElementById('total-modalidades').textContent = stats.total_modalidades || 0;
+            document.getElementById('total-niveles').textContent = stats.total_niveles || 0;
+            document.getElementById('total-divisiones').textContent = stats.total_divisiones || 0;
+            document.getElementById('total-estudiantes-estructura').textContent = stats.total_estudiantes || 0;
+        } catch (error) {
+            console.error('Error cargando estadísticas de estructura:', error);
+        }
+    }
+
+    // MODALIDADES (CON PROTECCIÓN MÚLTIPLE)
+    async function loadModalidades() {
+        // Protección contra ejecuciones múltiples
+        if (loadModalidades.isRunning) {
+            console.log('⚠️ loadModalidades ya está ejecutándose, ignorando...');
+            return;
+        }
+        
+        console.log('🔄 Iniciando carga de modalidades ÚNICA...');
+        loadModalidades.isRunning = true;
+        
+        const container = document.getElementById('modalidades-container');
+        if (!container) {
+            console.error('❌ Contenedor de modalidades no encontrado');
+            loadModalidades.isRunning = false;
+            return;
+        }
+        
+        // Mostrar spinner de carga
+        container.innerHTML = `
+            <div class="col-12 text-center py-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Cargando...</span>
+                </div>
+                <p class="mt-2 text-muted">Cargando modalidades...</p>
+            </div>
+        `;
+        
+        try {
+            console.log('📡 Realizando petición a /admin/modalidades...');
+            const response = await fetch('/admin/modalidades');
+            console.log('📡 Respuesta recibida:', response.status, response.statusText);
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status} - ${response.statusText}`);
+            }
+            
+            const modalidades = await response.json();
+            console.log('✅ Modalidades cargadas exitosamente:', modalidades.length, 'modalidades');
+            console.log('📊 Datos de modalidades:', modalidades);
+            
+            // Inicializar estructura global si no existe
+            if (!window.estructuraData) {
+                window.estructuraData = {};
+            }
+            
+            // Guardar en estructura global
+            window.estructuraData.modalidades = modalidades;
+            
+            // Mostrar modalidades
+            displayModalidades(modalidades);
+            
+            // Actualizar filtros
+            updateModalidadFilters();
+            
+        } catch (error) {
+            console.error('❌ Error cargando modalidades:', error);
+            container.innerHTML = `
+                <div class="col-12 text-center py-5">
+                    <div class="alert alert-danger" role="alert">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        <strong>Error al cargar modalidades</strong><br>
+                        ${error.message}
+                        <br><br>
+                        <button class="btn btn-outline-danger btn-sm" onclick="loadModalidades()">
+                            <i class="bi bi-arrow-clockwise me-1"></i>Reintentar
+                        </button>
+                    </div>
+                </div>
+            `;
+        } finally {
+            loadModalidades.isRunning = false;
+        }
+    }
+
+    function displayModalidades(modalidades) {
+        console.log('🎨 Mostrando modalidades en interfaz:', modalidades.length);
+        const container = document.getElementById('modalidades-container');
+        
+        if (!container) {
+            console.error('❌ Contenedor de modalidades no encontrado en displayModalidades');
+            return;
+        }
+        
+        if (modalidades.length === 0) {
+            console.log('📝 No hay modalidades para mostrar');
+            container.innerHTML = `
+                <div class="col-12 text-center py-5">
+                    <i class="bi bi-mortarboard text-muted" style="font-size: 4rem;"></i>
+                    <h5 class="mt-3 text-muted">No hay modalidades creadas</h5>
+                    <p class="text-muted">Crea la primera modalidad educativa</p>
+                    <button class="btn btn-primary" onclick="showCreateModalidadModal()">
+                        <i class="bi bi-plus me-1"></i> Nueva Modalidad
+                    </button>
+                </div>
+            `;
+            return;
+        }
+        
+        let html = '';
+        modalidades.forEach(modalidad => {
+            html += `
+                <div class="col-md-6 col-lg-4 mb-4">
+                    <div class="card h-100 shadow-sm border-primary modalidad-card" 
+                         onclick="showNivelesView(${modalidad.id}, '${modalidad.nombre}')" 
+                         style="cursor: pointer;">
+                        <div class="card-header bg-primary">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0">
+                                    <i class="bi bi-mortarboard me-2"></i>${modalidad.nombre}
+                                </h6>
+                                <div class="dropdown" onclick="event.stopPropagation();">
+                                    <button class="btn btn-sm btn-light dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                        <i class="bi bi-three-dots"></i>
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li><a class="dropdown-item" href="#" onclick="editModalidad(${modalidad.id})">
+                                            <i class="bi bi-pencil me-2"></i>Editar
+                                        </a></li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li><a class="dropdown-item text-danger" href="#" onclick="deleteModalidad(${modalidad.id}, '${modalidad.nombre}')">
+                                            <i class="bi bi-trash me-2"></i>Eliminar
+                                        </a></li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <p class="card-text text-muted">${modalidad.descripcion || 'Sin descripción'}</p>
+                            <div class="row text-center mb-3">
+                                <div class="col-4">
+                                    <div class="text-primary">
+                                        <i class="bi bi-layers" style="font-size: 1.5rem;"></i>
+                                        <div class="fw-bold">${modalidad.total_niveles || 0}</div>
+                                        <small class="text-muted">Niveles</small>
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="text-warning">
+                                        <i class="bi bi-grid-3x3" style="font-size: 1.5rem;"></i>
+                                        <div class="fw-bold">${modalidad.total_divisiones || 0}</div>
+                                        <small class="text-muted">Divisiones</small>
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="text-success">
+                                        <i class="bi bi-people" style="font-size: 1.5rem;"></i>
+                                        <div class="fw-bold">${modalidad.total_estudiantes || 0}</div>
+                                        <small class="text-muted">Estudiantes</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="text-center">
+                                <span class="badge bg-primary">
+                                    <i class="bi bi-arrow-right me-1"></i>Ver Niveles
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        container.innerHTML = html;
+        console.log('✅ Modalidades renderizadas exitosamente:', modalidades.length, 'modalidades');
+    }
+
+    // NIVELES
+    async function loadNiveles() {
+        console.log('Cargando niveles...');
+        const container = document.getElementById('niveles-container');
+        
+        if (!container) {
+            console.error('Contenedor de niveles no encontrado');
+            return;
+        }
+        
+        container.innerHTML = '<div class="col-12 text-center py-5"><div class="spinner-border text-success" role="status"><span class="visually-hidden">Cargando...</span></div><p class="mt-2 text-muted">Cargando niveles...</p></div>';
+        
+        try {
+            // Asegurar que tenemos modalidades cargadas
+            if (window.estructuraData.modalidades.length === 0) {
+                await loadModalidades();
+            }
+            
+            const response = await fetch('/admin/niveles');
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const niveles = await response.json();
+            console.log('Niveles cargados:', niveles);
+            window.estructuraData.niveles = niveles;
+            
+            displayNiveles(niveles);
+            updateNivelFilters();
+            
+        } catch (error) {
+            console.error('Error cargando niveles:', error);
+            container.innerHTML = '<div class="col-12 text-center py-5"><p class="text-danger">Error al cargar niveles: ' + error.message + '</p></div>';
+        }
+    }
+
+    function displayNiveles(niveles) {
+        const container = document.getElementById('niveles-container');
+        const filtroModalidad = document.getElementById('filter-modalidad-niveles')?.value;
+        
+        // Filtrar por modalidad si se especifica
+        let nivelesFiltered = niveles;
+        if (filtroModalidad) {
+            nivelesFiltered = niveles.filter(nivel => nivel.modalidad_id == filtroModalidad);
+        }
+        
+        if (nivelesFiltered.length === 0) {
+            container.innerHTML = `
+                <div class="col-12 text-center py-5">
+                    <i class="bi bi-layers text-muted" style="font-size: 4rem;"></i>
+                    <h5 class="mt-3 text-muted">No hay niveles ${filtroModalidad ? 'para esta modalidad' : 'creados'}</h5>
+                    <p class="text-muted">Crea el primer nivel educativo</p>
+                    <button class="btn btn-success" onclick="showCreateNivelModal()">
+                        <i class="bi bi-plus me-1"></i> Nuevo Nivel
+                    </button>
+                </div>
+            `;
+            return;
+        }
+        
+        let html = '';
+        nivelesFiltered.forEach(nivel => {
+            html += `
+                <div class="col-md-6 col-lg-4 mb-4">
+                    <div class="card h-100 shadow-sm border-success">
+                        <div class="card-header bg-success">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0">
+                                    <i class="bi bi-layers me-2"></i>${nivel.nombre}
+                                </h6>
+                                <div class="dropdown">
+                                    <button class="btn btn-sm btn-light dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                        <i class="bi bi-three-dots"></i>
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li><a class="dropdown-item" href="#" onclick="editNivel(${nivel.id})">
+                                            <i class="bi bi-pencil me-2"></i>Editar
+                                        </a></li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li><a class="dropdown-item text-danger" href="#" onclick="deleteNivel(${nivel.id}, '${nivel.nombre}')">
+                                            <i class="bi bi-trash me-2"></i>Eliminar
+                                        </a></li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="d-flex align-items-center mb-3">
+                                <span class="badge bg-primary me-2">${nivel.modalidad_nombre}</span>
+                                <span class="badge bg-secondary">Grado ${nivel.numero}</span>
+                            </div>
+                            <div class="row text-center">
+                                <div class="col-6">
+                                    <div class="text-warning">
+                                        <i class="bi bi-grid-3x3" style="font-size: 1.5rem;"></i>
+                                        <div class="fw-bold">${nivel.total_divisiones || 0}</div>
+                                        <small class="text-muted">Divisiones</small>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="text-info">
+                                        <i class="bi bi-people" style="font-size: 1.5rem;"></i>
+                                        <div class="fw-bold">${nivel.total_estudiantes || 0}</div>
+                                        <small class="text-muted">Estudiantes</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        container.innerHTML = html;
+    }
+    
+    // Cargar niveles filtrados por modalidad (CON PROTECCIÓN MÚLTIPLE)
+    window.loadNivelesForModalidad = async function loadNivelesForModalidad(modalidadId) {
+        // Protección contra ejecuciones múltiples
+        if (window.loadNivelesForModalidad.isRunning) {
+            console.log('⚠️ loadNivelesForModalidad ya está ejecutándose, ignorando...');
+            return;
+        }
+        
+        console.log('📚 Cargando niveles para modalidad:', modalidadId);
+        window.loadNivelesForModalidad.isRunning = true;
+        
+        const container = document.getElementById('niveles-container');
+        if (!container) {
+            console.error('❌ Contenedor de niveles no encontrado');
+            window.loadNivelesForModalidad.isRunning = false;
+            return;
+        }
+        
+        container.innerHTML = `
+            <div class="col-12 text-center py-5">
+                <div class="spinner-border text-success" role="status">
+                    <span class="visually-hidden">Cargando...</span>
+                </div>
+                <p class="mt-2 text-muted">Cargando niveles...</p>
+            </div>
+        `;
+        
+        try {
+            // Verificar que modalidadId sea un número
+            const modalidadIdNumerico = parseInt(modalidadId);
+            if (isNaN(modalidadIdNumerico)) {
+                throw new Error(`ID de modalidad inválido: ${modalidadId}`);
+            }
+            
+            console.log('🎯 Filtrando por modalidad ID:', modalidadIdNumerico);
+            
+            // Cargar datos frescos del servidor siempre para evitar problemas de caché
+            console.log('📡 Cargando niveles frescos desde servidor...');
+            const response = await fetch('/admin/niveles');
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const todosLosNiveles = await response.json();
+            console.log('🔄 Total niveles cargados:', todosLosNiveles.length);
+            
+            // Actualizar datos globales
+            window.estructuraData.niveles = todosLosNiveles;
+            
+            // Filtrar por modalidad usando el método seguro
+            const niveles = window.estructuraData.getNivelesPorModalidad(modalidadIdNumerico);
+            
+            console.log('✅ Niveles filtrados para modalidad:', niveles.length);
+            if (niveles.length > 0) {
+                console.log('📋 Niveles filtrados:', niveles.map(n => n.nombre));
+            } else {
+                console.warn('⚠️ No se encontraron niveles para la modalidad:', modalidadIdNumerico);
+            }
+            
+            displayNivelesConNavegacion(niveles);
+            
+        } catch (error) {
+            console.error('❌ Error cargando niveles:', error);
+            container.innerHTML = `
+                <div class="col-12 text-center py-5">
+                    <div class="alert alert-danger" role="alert">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        Error al cargar niveles: ${error.message}
+                    </div>
+                </div>
+            `;
+        } finally {
+            window.loadNivelesForModalidad.isRunning = false;
+        }
+    }
+    
+    // Mostrar niveles con navegación
+    function displayNivelesConNavegacion(niveles) {
+        const container = document.getElementById('niveles-container');
+        
+        if (niveles.length === 0) {
+            container.innerHTML = `
+                <div class="col-12 text-center py-5">
+                    <i class="bi bi-layers text-muted" style="font-size: 4rem;"></i>
+                    <h5 class="mt-3 text-muted">No hay niveles creados</h5>
+                    <p class="text-muted">Crea el primer nivel para esta modalidad</p>
+                    <button class="btn btn-success" onclick="showCreateNivelModal()">
+                        <i class="bi bi-plus me-1"></i> Nuevo Nivel
+                    </button>
+                </div>
+            `;
+            return;
+        }
+        
+        let html = '';
+        niveles.forEach(nivel => {
+            html += `
+                <div class="col-md-6 col-lg-4 mb-4">
+                    <div class="card h-100 shadow-sm border-success nivel-card" 
+                         onclick="showDivisionesView(${nivel.id}, '${nivel.nombre}', '${nivel.modalidad_nombre || ''}')" 
+                         style="cursor: pointer;">
+                        <div class="card-header bg-success">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0">
+                                    <i class="bi bi-layers me-2"></i>${nivel.nombre}
+                                </h6>
+                                <div class="dropdown" onclick="event.stopPropagation();">
+                                    <button class="btn btn-sm btn-light dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                        <i class="bi bi-three-dots"></i>
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li><a class="dropdown-item" href="#" onclick="editNivel(${nivel.id})">
+                                            <i class="bi bi-pencil me-2"></i>Editar
+                                        </a></li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li><a class="dropdown-item text-danger" href="#" onclick="deleteNivel(${nivel.id}, '${nivel.nombre}')">
+                                            <i class="bi bi-trash me-2"></i>Eliminar
+                                        </a></li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="row text-center mb-3">
+                                <div class="col-6">
+                                    <div class="text-warning">
+                                        <i class="bi bi-grid-3x3" style="font-size: 1.5rem;"></i>
+                                        <div class="fw-bold">${nivel.total_divisiones || 0}</div>
+                                        <small class="text-muted">Divisiones</small>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="text-info">
+                                        <i class="bi bi-people" style="font-size: 1.5rem;"></i>
+                                        <div class="fw-bold">${nivel.total_estudiantes || 0}</div>
+                                        <small class="text-muted">Estudiantes</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="text-center">
+                                <span class="badge bg-success">
+                                    <i class="bi bi-arrow-right me-1"></i>Ver Divisiones
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        container.innerHTML = html;
+        console.log('✅ Niveles renderizados:', niveles.length);
+    }
+    
+    // Cargar divisiones filtradas por nivel
+    window.loadDivisionesForNivel = async function loadDivisionesForNivel(nivelId) {
+        // Protección contra ejecuciones múltiples
+        if (window.loadDivisionesForNivel.isRunning) {
+            console.log('⚠️ loadDivisionesForNivel ya está ejecutándose, ignorando...');
+            return;
+        }
+        
+        console.log('📐 Cargando divisiones para nivel:', nivelId);
+        window.loadDivisionesForNivel.isRunning = true;
+        
+        const container = document.getElementById('divisiones-container');
+        
+        if (!container) {
+            console.error('❌ Contenedor de divisiones no encontrado');
+            window.loadDivisionesForNivel.isRunning = false;
+            return;
+        }
+        
+        container.innerHTML = `
+            <div class="col-12 text-center py-5">
+                <div class="spinner-border text-warning" role="status">
+                    <span class="visually-hidden">Cargando...</span>
+                </div>
+                <p class="mt-2 text-muted">Cargando divisiones...</p>
+            </div>
+        `;
+        
+        try {
+            // Verificar que nivelId sea un número
+            const nivelIdNumerico = parseInt(nivelId);
+            if (isNaN(nivelIdNumerico)) {
+                throw new Error(`ID de nivel inválido: ${nivelId}`);
+            }
+            
+            console.log('🎯 Filtrando por nivel ID:', nivelIdNumerico);
+            
+            // Cargar datos frescos del servidor siempre para evitar problemas de caché
+            console.log('📡 Cargando divisiones frescas desde servidor...');
+            const response = await fetch('/admin/divisiones');
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const todasLasDivisiones = await response.json();
+            console.log('🔄 Total divisiones cargadas:', todasLasDivisiones.length);
+            
+            // Actualizar datos globales
+            window.estructuraData.divisiones = todasLasDivisiones;
+            
+            // Filtrar por nivel usando el método seguro
+            const divisiones = window.estructuraData.getDivisionesPorNivel(nivelIdNumerico);
+            
+            console.log('✅ Divisiones filtradas para nivel:', divisiones.length);
+            if (divisiones.length > 0) {
+                console.log('📋 Divisiones filtradas:', divisiones.map(d => d.nombre_completo || d.division));
+            } else {
+                console.warn('⚠️ No se encontraron divisiones para el nivel:', nivelIdNumerico);
+            }
+            
+            displayDivisionesConNavegacion(divisiones);
+            
+        } catch (error) {
+            console.error('❌ Error cargando divisiones:', error);
+            container.innerHTML = `
+                <div class="col-12 text-center py-5">
+                    <div class="alert alert-danger" role="alert">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        Error al cargar divisiones: ${error.message}
+                    </div>
+                </div>
+            `;
+        } finally {
+            window.loadDivisionesForNivel.isRunning = false;
+        }
+    }
+    
+    // Mostrar divisiones con navegación
+    function displayDivisionesConNavegacion(divisiones) {
+        const container = document.getElementById('divisiones-container');
+        
+        if (divisiones.length === 0) {
+            container.innerHTML = `
+                <div class="col-12 text-center py-5">
+                    <i class="bi bi-grid-3x3 text-muted" style="font-size: 4rem;"></i>
+                    <h5 class="mt-3 text-muted">No hay divisiones creadas</h5>
+                    <p class="text-muted">Crea la primera división para este nivel</p>
+                    <button class="btn btn-warning" onclick="showCreateDivisionModal()">
+                        <i class="bi bi-plus me-1"></i> Nueva División
+                    </button>
+                </div>
+            `;
+            return;
+        }
+        
+        let html = '';
+        divisiones.forEach(division => {
+            html += `
+                <div class="col-md-6 col-lg-4 mb-4">
+                    <div class="card h-100 shadow-sm border-warning">
+                        <div class="card-header bg-warning">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0">
+                                    <i class="bi bi-grid-3x3 me-2"></i>${division.nombre_completo || division.division}
+                                </h6>
+                                <div class="dropdown">
+                                    <button class="btn btn-sm btn-dark dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                        <i class="bi bi-three-dots"></i>
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li><a class="dropdown-item" href="#" onclick="editDivision(${division.id})">
+                                            <i class="bi bi-pencil me-2"></i>Editar
+                                        </a></li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li><a class="dropdown-item text-danger" href="#" onclick="deleteDivision(${division.id}, '${division.nombre_completo || division.division}')">
+                                            <i class="bi bi-trash me-2"></i>Eliminar
+                                        </a></li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <span class="badge bg-primary me-1">${division.modalidad_nombre || 'Modalidad'}</span>
+                                <span class="badge bg-success me-1">${division.nivel_nombre || 'Nivel'}</span>
+                                ${division.aula ? `<span class="badge bg-info">Aula: ${division.aula}</span>` : ''}
+                            </div>
+                            <div class="text-center">
+                                <div class="text-info">
+                                    <i class="bi bi-people" style="font-size: 2rem;"></i>
+                                    <div class="fw-bold fs-4">${division.total_estudiantes || 0}</div>
+                                    <small class="text-muted">Estudiantes</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        container.innerHTML = html;
+        console.log('✅ Divisiones renderizadas:', divisiones.length);
+    }
+
+    // DIVISIONES
+    async function loadDivisiones() {
+        console.log('Cargando divisiones...');
+        const container = document.getElementById('divisiones-container');
+        
+        if (!container) {
+            console.error('Contenedor de divisiones no encontrado');
+            return;
+        }
+        
+        container.innerHTML = '<div class="col-12 text-center py-5"><div class="spinner-border text-warning" role="status"><span class="visually-hidden">Cargando...</span></div><p class="mt-2 text-muted">Cargando divisiones...</p></div>';
+        
+        try {
+            // Asegurar que tenemos modalidades y niveles cargados
+            if (estructuraData.modalidades.length === 0) {
+                await loadModalidades();
+            }
+            if (estructuraData.niveles.length === 0) {
+                await loadNiveles();
+            }
+            
+            const response = await fetch('/admin/divisiones');
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const divisiones = await response.json();
+            console.log('Divisiones cargadas:', divisiones);
+            estructuraData.divisiones = divisiones;
+            
+            displayDivisiones(divisiones);
+            
+        } catch (error) {
+            console.error('Error cargando divisiones:', error);
+            container.innerHTML = '<div class="col-12 text-center py-5"><p class="text-danger">Error al cargar divisiones: ' + error.message + '</p></div>';
+        }
+    }
+
+    function displayDivisiones(divisiones) {
+        const container = document.getElementById('divisiones-container');
+        const filtroModalidad = document.getElementById('filter-modalidad-divisiones')?.value;
+        const filtroNivel = document.getElementById('filter-nivel-divisiones')?.value;
+        
+        // Filtrar por modalidad y nivel si se especifica
+        let divisionesFiltradas = divisiones;
+        if (filtroModalidad) {
+            divisionesFiltradas = divisionesFiltradas.filter(division => division.modalidad_id == filtroModalidad);
+        }
+        if (filtroNivel) {
+            divisionesFiltradas = divisionesFiltradas.filter(division => division.nivel_id == filtroNivel);
+        }
+        
+        if (divisionesFiltradas.length === 0) {
+            container.innerHTML = `
+                <div class="col-12 text-center py-5">
+                    <i class="bi bi-grid-3x3 text-muted" style="font-size: 4rem;"></i>
+                    <h5 class="mt-3 text-muted">No hay divisiones ${filtroModalidad || filtroNivel ? 'para los filtros seleccionados' : 'creadas'}</h5>
+                    <p class="text-muted">Crea la primera división</p>
+                    <button class="btn btn-warning" onclick="showCreateDivisionModal()">
+                        <i class="bi bi-plus me-1"></i> Nueva División
+                    </button>
+                </div>
+            `;
+            return;
+        }
+        
+        let html = '';
+        divisionesFiltradas.forEach(division => {
+            html += `
+                <div class="col-md-6 col-lg-4 mb-4">
+                    <div class="card h-100 shadow-sm border-warning">
+                        <div class="card-header bg-warning">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0">
+                                    <i class="bi bi-grid-3x3 me-2"></i>${division.nombre_completo}
+                                </h6>
+                                <div class="dropdown">
+                                    <button class="btn btn-sm btn-dark dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                        <i class="bi bi-three-dots"></i>
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li><a class="dropdown-item" href="#" onclick="editDivision(${division.id})">
+                                            <i class="bi bi-pencil me-2"></i>Editar
+                                        </a></li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li><a class="dropdown-item text-danger" href="#" onclick="deleteDivision(${division.id}, '${division.nombre_completo}')">
+                                            <i class="bi bi-trash me-2"></i>Eliminar
+                                        </a></li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <span class="badge bg-primary me-1">${division.modalidad_nombre}</span>
+                                <span class="badge bg-success me-1">${division.nivel_nombre}</span>
+                                ${division.aula ? `<span class="badge bg-info">Aula: ${division.aula}</span>` : ''}
+                            </div>
+                            <div class="text-center">
+                                <div class="text-info">
+                                    <i class="bi bi-people" style="font-size: 2rem;"></i>
+                                    <div class="fw-bold fs-4">${division.total_estudiantes || 0}</div>
+                                    <small class="text-muted">Estudiantes</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        container.innerHTML = html;
+    }
+
+    // JERARQUÍA
+    async function loadJerarquia() {
+        console.log('Cargando jerarquía...');
+        const container = document.getElementById('jerarquia-container');
+        
+        if (!container) {
+            console.error('Contenedor de jerarquía no encontrado');
+            return;
+        }
+        
+        container.innerHTML = '<div class="col-12 text-center py-5"><div class="spinner-border text-info" role="status"><span class="visually-hidden">Cargando...</span></div><p class="mt-2 text-muted">Cargando estructura...</p></div>';
+        
+        try {
+            const response = await fetch('/admin/estructura/jerarquia');
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const estructura = await response.json();
+            console.log('Jerarquía cargada:', estructura);
+            
+            displayJerarquia(estructura);
+            
+        } catch (error) {
+            console.error('Error cargando jerarquía:', error);
+            container.innerHTML = '<div class="col-12 text-center py-5"><p class="text-danger">Error al cargar estructura: ' + error.message + '</p></div>';
+        }
+    }
+
+    function displayJerarquia(estructura) {
+        const container = document.getElementById('jerarquia-container');
+        const esCompacta = document.getElementById('vista-compacta').checked;
+        
+        let html = '';
+        
+        estructura.forEach(modalidad => {
+            html += `
+                <div class="card mb-4 shadow-sm">
+                    <div class="card-header bg-primary">
+                        <h5 class="mb-0">
+                            <i class="bi bi-mortarboard me-2"></i>${modalidad.nombre}
+                            <span class="badge bg-light text-primary ms-2">${modalidad.niveles.length} niveles</span>
+                        </h5>
+                        ${!esCompacta && modalidad.descripcion ? `<small>${modalidad.descripcion}</small>` : ''}
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+            `;
+            
+            modalidad.niveles.forEach((nivel, nivelIndex) => {
+                html += `
+                    <div class="col-md-6 col-lg-4 mb-3">
+                        <div class="card border-success">
+                                                            <div class="card-header bg-success py-2">
+                                <h6 class="mb-0">
+                                    <i class="bi bi-layers me-1"></i>${nivel.nombre}
+                                    <span class="badge bg-light text-success ms-1">${nivel.divisiones.length}</span>
+                                </h6>
+                            </div>
+                            <div class="card-body p-2">
+                `;
+                
+                if (nivel.divisiones.length === 0) {
+                    html += '<small class="text-muted">Sin divisiones</small>';
+                } else {
+                    nivel.divisiones.forEach(division => {
+                        html += `
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="badge bg-warning text-dark">${division.division}</span>
+                                <small class="text-muted">${division.total_estudiantes || 0} est.</small>
+                            </div>
+                        `;
+                    });
+                }
+                
+                html += `
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            html += `
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        if (html === '') {
+            html = `
+                <div class="col-12 text-center py-5">
+                    <i class="bi bi-diagram-3 text-muted" style="font-size: 4rem;"></i>
+                    <h5 class="mt-3 text-muted">No hay estructura creada</h5>
+                    <p class="text-muted">Crea modalidades, niveles y divisiones para ver la estructura</p>
+                </div>
+            `;
+        }
+        
+        container.innerHTML = html;
+    }
+
+    // FILTROS Y ACTUALIZACIONES
+    function updateModalidadFilters() {
+        const filterNiveles = document.getElementById('filter-modalidad-niveles');
+        const filterDivisiones = document.getElementById('filter-modalidad-divisiones');
+        
+        if (filterNiveles && filterDivisiones) {
+            const options = '<option value="">Todas las modalidades</option>' + 
+                estructuraData.modalidades.map(m => `<option value="${m.id}">${m.nombre}</option>`).join('');
+            
+            filterNiveles.innerHTML = options;
+            filterDivisiones.innerHTML = options;
+        }
+    }
+
+    function updateNivelFilters() {
+        const filterDivisiones = document.getElementById('filter-nivel-divisiones');
+        
+        if (filterDivisiones) {
+            const options = '<option value="">Todos los niveles</option>' + 
+                estructuraData.niveles.map(n => `<option value="${n.id}">${n.nombre}</option>`).join('');
+            
+            filterDivisiones.innerHTML = options;
+        }
+    }
+
+    // ========================================
+    // MATERIAS Y ASIGNACIONES
+    // ========================================
+    window.materiasData = {
+        materias: [],
+        filteredMaterias: [],
+        stats: {
+            totalMaterias: 0,
+            totalAsignadas: 0,
+            totalHoras: 0,
+            totalProfesores: 0
+        },
+        currentSearch: '',
+        currentModalidadFilter: ''
+    };
+    
+    async function loadMaterias() {
+        document.getElementById('materias-loading').style.display = 'block';
+        document.getElementById('materias-table').style.display = 'none';
+        
+        try {
+            let url = '/admin/materias';
+            const params = [];
+            
+            if (materiasData.currentModalidadFilter) {
+                params.push(`modalidad_id=${materiasData.currentModalidadFilter}`);
+            }
+            
+            if (params.length > 0) {
+                url += '?' + params.join('&');
+            }
+            
+            console.log('📚 Cargando materias desde:', url);
+            const response = await fetch(url);
+            
+            if (!response.ok) {
+                throw new Error(`Error HTTP: ${response.status}`);
+            }
+            
+            const materias = await response.json();
+            console.log('✅ Materias cargadas:', materias.length);
+            
+            // Guardar datos en el objeto global
+            materiasData.materias = materias;
+            
+            // Aplicar filtro de búsqueda si existe
+            filterMaterias();
+            
+            // Actualizar estadísticas
+            updateMateriasStats();
+            
+            // Actualizar filtros
+            await updateMateriaFilters();
+            
+        } catch (error) {
+            console.error('❌ Error cargando materias:', error);
+            showNotification('Error al cargar materias: ' + error.message, 'error');
+            document.getElementById('materias-loading').innerHTML = `
+                <div class="alert alert-danger" role="alert">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    Error al cargar materias: ${error.message}
+                    <button class="btn btn-sm btn-outline-danger mt-2" onclick="loadMaterias()">
+                        <i class="bi bi-arrow-clockwise me-1"></i>Reintentar
+                    </button>
+                </div>
+            `;
+        } finally {
+            document.getElementById('materias-loading').style.display = 'none';
+            document.getElementById('materias-table').style.display = 'block';
+        }
+    }
+    
+    function filterMaterias() {
+        const search = materiasData.currentSearch.toLowerCase();
+        
+        if (!search && !materiasData.currentModalidadFilter) {
+            // No hay filtros activos
+            materiasData.filteredMaterias = [...materiasData.materias];
+        } else {
+            // Aplicar filtros
+            materiasData.filteredMaterias = materiasData.materias.filter(materia => {
+                const matchesSearch = !search || 
+                    materia.name.toLowerCase().includes(search) ||
+                    (materia.codigo && materia.codigo.toLowerCase().includes(search)) ||
+                    (materia.description && materia.description.toLowerCase().includes(search));
+                
+                const matchesModalidad = !materiasData.currentModalidadFilter || 
+                    materia.modalidad_id == materiasData.currentModalidadFilter ||
+                    // Considerar materias sin modalidad (comunes) cuando se filtra por modalidad
+                    (materia.modalidad_id === null);
+                
+                return matchesSearch && matchesModalidad;
+            });
+        }
+        
+        // Mostrar materias filtradas
+        displayMaterias(materiasData.filteredMaterias);
+    }
+    
+    function searchMaterias() {
+        materiasData.currentSearch = document.getElementById('search-materias').value.trim();
+        filterMaterias();
+    }
+    
+    function displayMaterias(materias) {
+        const tbody = document.getElementById('materias-tbody');
+        const noMateriasDiv = document.getElementById('no-materias');
+        
+        if (!materias || materias.length === 0) {
+            tbody.innerHTML = '';
+            noMateriasDiv.style.display = 'block';
+            return;
+        }
+        
+        noMateriasDiv.style.display = 'none';
+        
+        let html = '';
+        materias.forEach(materia => {
+            html += `
+                <tr>
+                    <td>
+                        <div class="d-flex align-items-center">
+                            <div class="me-2">
+                                <i class="bi bi-book text-primary" style="font-size: 1.2rem;"></i>
+                            </div>
+                            <div>
+                                <strong>${materia.name}</strong>
+                                ${materia.description ? `<br><small class="text-muted">${materia.description}</small>` : ''}
+                            </div>
+                        </div>
+                    </td>
+                    <td><code>${materia.codigo || '-'}</code></td>
+                    <td><span class="badge bg-primary">${materia.modalidad_nombre || 'Común'}</span></td>
+                    <td class="text-center">
+                        <span class="badge bg-warning text-dark">
+                            <i class="bi bi-clock me-1"></i>${materia.horas_semanales || 0}h
+                        </span>
+                    </td>
+                    <td class="text-center">
+                        <span class="badge bg-info">
+                            <i class="bi bi-people me-1"></i>${materia.total_asignaciones || 0}
+                        </span>
+                    </td>
+                    <td class="text-center">
+                        <div class="btn-group" role="group">
+                            <button class="btn btn-sm btn-outline-primary" 
+                                    onclick="materiaEdit(${materia.id})" 
+                                    title="Editar materia">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger" 
+                                    onclick="materiaDelete(${materia.id}, '${materia.name}')" 
+                                    title="Eliminar materia">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        });
+        
+        tbody.innerHTML = html;
+    }
+    
+    function updateMateriasStats() {
+        // Calcular estadísticas
+        const stats = {
+            totalMaterias: materiasData.materias.length,
+            totalAsignadas: 0,
+            totalHoras: 0,
+            totalProfesores: 0
+        };
+        
+        materiasData.materias.forEach(materia => {
+            if (materia.total_asignaciones > 0) {
+                stats.totalAsignadas++;
+            }
+            
+            stats.totalHoras += parseInt(materia.horas_semanales || 0);
+            stats.totalProfesores += parseInt(materia.total_profesores || 0);
+        });
+        
+        materiasData.stats = stats;
+        
+        // Actualizar UI
+        document.getElementById('total-materias').textContent = stats.totalMaterias;
+        document.getElementById('total-materias-asignadas').textContent = stats.totalAsignadas;
+        document.getElementById('total-horas').textContent = stats.totalHoras;
+        document.getElementById('total-profesores-materias').textContent = stats.totalProfesores;
+    }
+    
+    async function updateMateriaFilters() {
+        try {
+            // Cargar modalidades para los filtros si no están cargadas
+            if (!window.estructuraData || !window.estructuraData.modalidades || window.estructuraData.modalidades.length === 0) {
+                const response = await fetch('/admin/modalidades');
+                const modalidades = await response.json();
+                
+                if (!window.estructuraData) {
+                    window.estructuraData = {};
+                }
+                
+                window.estructuraData.modalidades = modalidades;
+            }
+            
+            // Actualizar filtro de modalidades
+            const modalidadSelect = document.getElementById('filter-modalidad-materias');
+            if (modalidadSelect) {
+                const currentValue = modalidadSelect.value;
+                
+                modalidadSelect.innerHTML = '<option value="">Todas las modalidades</option>';
+                window.estructuraData.modalidades.forEach(modalidad => {
+                    modalidadSelect.innerHTML += `<option value="${modalidad.id}">${modalidad.nombre}</option>`;
+                });
+                
+                modalidadSelect.value = currentValue;
+                
+                // Evento de cambio
+                modalidadSelect.onchange = function() {
+                    materiasData.currentModalidadFilter = this.value;
+                    loadMaterias();
+                };
+            }
+            
+        } catch (error) {
+            console.error('Error actualizando filtros de materias:', error);
+        }
+    }
+    
+    // La función updateNivelFilterByModalidad ha sido eliminada ya que no es necesaria
+    // debido a que la tabla subjects no tiene relación directa con niveles
+    
+    // Las funciones de CRUD de materias se han movido a crud-academico.js para evitar duplicación
+
+    // ========================================
+    // FUNCIONES CRUD ESTRUCTURA ACADÉMICA
+    // ========================================
+    
+    // MODALIDADES CRUD
+    function showCreateModalidadModal() {
+        document.getElementById('modalidadModalTitle').innerHTML = '<i class="bi bi-mortarboard me-2"></i>Nueva Modalidad';
+        document.getElementById('modalidadForm').reset();
+        document.getElementById('modalidadId').value = '';
+        document.getElementById('modalidadSaveText').textContent = 'Guardar';
+        new bootstrap.Modal(document.getElementById('modalidadModal')).show();
+    }
+
+    async function editModalidad(id) {
+        try {
+            const response = await fetch(`/admin/modalidades/${id}`);
+            const modalidad = await response.json();
+            
+            document.getElementById('modalidadModalTitle').innerHTML = '<i class="bi bi-pencil me-2"></i>Editar Modalidad';
+            document.getElementById('modalidadId').value = modalidad.id;
+            document.getElementById('modalidadNombre').value = modalidad.nombre;
+            document.getElementById('modalidadDescripcion').value = modalidad.descripcion || '';
+            document.getElementById('modalidadSaveText').textContent = 'Actualizar';
+            
+            new bootstrap.Modal(document.getElementById('modalidadModal')).show();
+        } catch (error) {
+            console.error('Error cargando modalidad:', error);
+            showNotification('Error al cargar los datos de la modalidad', 'error');
+        }
+    }
+
+    async function saveModalidad() {
+        const form = document.getElementById('modalidadForm');
+        const userId = document.getElementById('modalidadId').value;
+        const isEdit = userId !== '';
+        
+        // Validar formulario
+        if (!form.checkValidity()) {
+            form.classList.add('was-validated');
+            return;
+        }
+        
+        const data = {
+            nombre: document.getElementById('modalidadNombre').value.trim(),
+            descripcion: document.getElementById('modalidadDescripcion').value.trim()
+        };
+
+        try {
+            const url = isEdit ? `/admin/modalidades/${userId}` : '/admin/modalidades';
+            const method = isEdit ? 'PUT' : 'POST';
+            
+            const response = await fetch(url, {
+                method: method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            
+            const result = await response.json();
+            
+            if (response.ok) {
+                const message = isEdit ? 'Modalidad actualizada exitosamente' : 'Modalidad creada exitosamente';
+                showNotification(message, 'success');
+                bootstrap.Modal.getInstance(document.getElementById('modalidadModal')).hide();
+                
+                // Usar la función de recarga automática
+                setTimeout(() => reloadCurrentView(), 300);
+            } else {
+                showNotification(result.error || 'Error al guardar modalidad', 'error');
+            }
+        } catch (error) {
+            console.error('Error guardando modalidad:', error);
+            showNotification('Error al guardar modalidad', 'error');
+        }
+    }
+
+    function deleteModalidad(id, nombre) {
+        document.getElementById('deleteAcademicoName').textContent = `Modalidad: ${nombre}`;
+        // Verificar si el elemento existe antes de intentar acceder a él
+        const fullNameInput = document.getElementById('deleteAcademicoFullName');
+        if (fullNameInput) {
+            fullNameInput.value = nombre;
+        }
+        document.getElementById('deleteAcademicoModal').setAttribute('data-type', 'modalidad');
+        document.getElementById('deleteAcademicoModal').setAttribute('data-id', id);
+        document.getElementById('deleteAcademicoModal').setAttribute('data-name', nombre); // Respaldo del nombre
+        new bootstrap.Modal(document.getElementById('deleteAcademicoModal')).show();
+    }
+
+    // NIVELES CRUD
+    function showCreateNivelModal() {
+        document.getElementById('nivelModalTitle').innerHTML = '<i class="bi bi-layers me-2"></i>Nuevo Nivel';
+        document.getElementById('nivelForm').reset();
+        document.getElementById('nivelId').value = '';
+        document.getElementById('nivelSaveText').textContent = 'Guardar';
+        
+        // Llenar select de modalidades
+        const modalidadSelect = document.getElementById('nivelModalidad');
+        modalidadSelect.innerHTML = '<option value="">Seleccionar modalidad</option>';
+        estructuraData.modalidades.forEach(modalidad => {
+            modalidadSelect.innerHTML += `<option value="${modalidad.id}">${modalidad.nombre}</option>`;
+        });
+        
+        new bootstrap.Modal(document.getElementById('nivelModal')).show();
+    }
+
+    async function editNivel(id) {
+        try {
+            const response = await fetch(`/admin/niveles/${id}`);
+            const nivel = await response.json();
+            
+            document.getElementById('nivelModalTitle').innerHTML = '<i class="bi bi-pencil me-2"></i>Editar Nivel';
+            document.getElementById('nivelId').value = nivel.id;
+            document.getElementById('nivelNumero').value = nivel.numero;
+            
+            // Limpiar el nombre para eliminar cualquier número adicional al final
+            let nombreLimpio = nivel.nombre;
+            // Si el nombre termina con dígitos después de la palabra "editado", eliminarlos
+            nombreLimpio = nombreLimpio.replace(/\s+editado\s+\d+$/, '');
+            
+            document.getElementById('nivelNombre').value = nombreLimpio;
+            
+            // Llenar select de modalidades
+            const modalidadSelect = document.getElementById('nivelModalidad');
+            modalidadSelect.innerHTML = '<option value="">Seleccionar modalidad</option>';
+            estructuraData.modalidades.forEach(modalidad => {
+                const selected = modalidad.id === nivel.modalidad_id ? 'selected' : '';
+                modalidadSelect.innerHTML += `<option value="${modalidad.id}" ${selected}>${modalidad.nombre}</option>`;
+            });
+            
+            document.getElementById('nivelSaveText').textContent = 'Actualizar';
+            new bootstrap.Modal(document.getElementById('nivelModal')).show();
+        } catch (error) {
+            console.error('Error cargando nivel:', error);
+            showNotification('Error al cargar los datos del nivel', 'error');
+        }
+    }
+
+    async function saveNivel() {
+        const form = document.getElementById('nivelForm');
+        const nivelId = document.getElementById('nivelId').value;
+        const isEdit = nivelId !== '';
+        
+        // Validar formulario
+        if (!form.checkValidity()) {
+            form.classList.add('was-validated');
+            return;
+        }
+        
+        const data = {
+            modalidad_id: document.getElementById('nivelModalidad').value,
+            numero: parseInt(document.getElementById('nivelNumero').value),
+            nombre: document.getElementById('nivelNombre').value.trim()
+        };
+
+        try {
+            const url = isEdit ? `/admin/niveles/${nivelId}` : '/admin/niveles';
+            const method = isEdit ? 'PUT' : 'POST';
+            
+            const response = await fetch(url, {
+                method: method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            
+            const result = await response.json();
+            
+            if (response.ok) {
+                const message = isEdit ? 'Nivel actualizado exitosamente' : 'Nivel creado exitosamente';
+                showNotification(message, 'success');
+                bootstrap.Modal.getInstance(document.getElementById('nivelModal')).hide();
+                
+                // Usar la función de recarga automática
+                setTimeout(() => reloadCurrentView(), 300);
+            } else {
+                showNotification(result.error || 'Error al guardar nivel', 'error');
+            }
+        } catch (error) {
+            console.error('Error guardando nivel:', error);
+            showNotification('Error al guardar nivel', 'error');
+        }
+    }
+
+    function deleteNivel(id, nombre) {
+        document.getElementById('deleteAcademicoName').textContent = `Nivel: ${nombre}`;
+        // Verificar si el elemento existe antes de intentar acceder a él
+        const fullNameInput = document.getElementById('deleteAcademicoFullName');
+        if (fullNameInput) {
+            fullNameInput.value = nombre;
+        }
+        document.getElementById('deleteAcademicoModal').setAttribute('data-type', 'nivel');
+        document.getElementById('deleteAcademicoModal').setAttribute('data-id', id);
+        document.getElementById('deleteAcademicoModal').setAttribute('data-name', nombre); // Respaldo del nombre
+        new bootstrap.Modal(document.getElementById('deleteAcademicoModal')).show();
+    }
+
+    // DIVISIONES CRUD
+    function showCreateDivisionModal() {
+        document.getElementById('divisionModalTitle').innerHTML = '<i class="bi bi-grid-3x3 me-2"></i>Nueva División';
+        document.getElementById('divisionForm').reset();
+        document.getElementById('divisionId').value = '';
+        document.getElementById('divisionSaveText').textContent = 'Guardar';
+        
+        // Llenar select de niveles
+        const nivelSelect = document.getElementById('divisionNivel');
+        nivelSelect.innerHTML = '<option value="">Seleccionar nivel</option>';
+        estructuraData.niveles.forEach(nivel => {
+            nivelSelect.innerHTML += `<option value="${nivel.id}">${nivel.nombre} (${nivel.modalidad_nombre})</option>`;
+        });
+        
+        new bootstrap.Modal(document.getElementById('divisionModal')).show();
+        // Configurar actualización automática del nombre completo
+        setupDivisionNameUpdate();
+    }
+
+    async function editDivision(id) {
+        try {
+            const response = await fetch(`/admin/divisiones/${id}`);
+            const division = await response.json();
+            
+            document.getElementById('divisionModalTitle').innerHTML = '<i class="bi bi-pencil me-2"></i>Editar División';
+            document.getElementById('divisionId').value = division.id;
+            document.getElementById('divisionLetra').value = division.division;
+            document.getElementById('divisionAula').value = division.aula || '';
+            document.getElementById('divisionNombreCompleto').value = division.nombre_completo;
+            
+            // Llenar select de niveles
+            const nivelSelect = document.getElementById('divisionNivel');
+            nivelSelect.innerHTML = '<option value="">Seleccionar nivel</option>';
+            estructuraData.niveles.forEach(nivel => {
+                const selected = nivel.id === division.nivel_id ? 'selected' : '';
+                nivelSelect.innerHTML += `<option value="${nivel.id}" ${selected}>${nivel.nombre} (${nivel.modalidad_nombre})</option>`;
+            });
+            
+            document.getElementById('divisionSaveText').textContent = 'Actualizar';
+            new bootstrap.Modal(document.getElementById('divisionModal')).show();
+            // Configurar actualización automática del nombre completo
+            setupDivisionNameUpdate();
+        } catch (error) {
+            console.error('Error cargando división:', error);
+            showNotification('Error al cargar los datos de la división', 'error');
+        }
+    }
+
+    async function saveDivision() {
+        const form = document.getElementById('divisionForm');
+        const divisionId = document.getElementById('divisionId').value;
+        const isEdit = divisionId !== '';
+        
+        // Validar formulario
+        if (!form.checkValidity()) {
+            form.classList.add('was-validated');
+            return;
+        }
+        
+        const data = {
+            nivel_id: document.getElementById('divisionNivel').value,
+            division: document.getElementById('divisionLetra').value.trim().toUpperCase(),
+            aula: document.getElementById('divisionAula').value.trim(),
+            nombre_completo: document.getElementById('divisionNombreCompleto').value.trim()
+        };
+
+        try {
+            const url = isEdit ? `/admin/divisiones/${divisionId}` : '/admin/divisiones';
+            const method = isEdit ? 'PUT' : 'POST';
+            
+            const response = await fetch(url, {
+                method: method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            
+            const result = await response.json();
+            
+            if (response.ok) {
+                const message = isEdit ? 'División actualizada exitosamente' : 'División creada exitosamente';
+                showNotification(message, 'success');
+                bootstrap.Modal.getInstance(document.getElementById('divisionModal')).hide();
+                
+                // Usar la función de recarga automática
+                setTimeout(() => reloadCurrentView(), 300);
+            } else {
+                showNotification(result.error || 'Error al guardar división', 'error');
+            }
+        } catch (error) {
+            console.error('Error guardando división:', error);
+            showNotification('Error al guardar división', 'error');
+        }
+    }
+
+    function deleteDivision(id, nombre) {
+        document.getElementById('deleteAcademicoName').textContent = `División: ${nombre}`;
+        // Verificar si el elemento existe antes de intentar acceder a él
+        const fullNameInput = document.getElementById('deleteAcademicoFullName');
+        if (fullNameInput) {
+            fullNameInput.value = nombre;
+        }
+        document.getElementById('deleteAcademicoModal').setAttribute('data-type', 'division');
+        document.getElementById('deleteAcademicoModal').setAttribute('data-id', id);
+        document.getElementById('deleteAcademicoModal').setAttribute('data-name', nombre); // Respaldo del nombre
+        new bootstrap.Modal(document.getElementById('deleteAcademicoModal')).show();
+    }
+
+    // CONFIRMACIÓN DE ELIMINACIÓN GENERAL
+    async function confirmDeleteAcademico() {
+        const modal = document.getElementById('deleteAcademicoModal');
+        const type = modal.getAttribute('data-type');
+        const id = modal.getAttribute('data-id');
+        
+        // Obtener el nombre del elemento a eliminar (con respaldo)
+        let nombreCompleto = '';
+        const fullNameInput = document.getElementById('deleteAcademicoFullName');
+        if (fullNameInput && fullNameInput.value) {
+            nombreCompleto = fullNameInput.value;
+        } else {
+            // Usar el respaldo del nombre guardado en el atributo data-name
+            nombreCompleto = modal.getAttribute('data-name') || `ID: ${id}`;
+        }
+        
+        console.log(`🗑️ Confirmando eliminación de ${type} con ID: ${id}, nombre: "${nombreCompleto}"`);
+
+        try {
+            // Guardar contexto actual para saber a dónde volver después de eliminar
+            const contextoActual = { ...window.estructuraData.contexto };
+            console.log('📊 Contexto antes de eliminar:', JSON.stringify(contextoActual));
+            
+            // Antes de eliminar, encontrar el elemento en la interfaz para animarlo
+            let elementToAnimate = null;
+            
+            try {
+                switch(type) {
+                    case 'modalidad':
+                        elementToAnimate = document.querySelector(`.modalidad-card[onclick*="showNivelesView(${id},"]`)?.closest('.col-md-6');
+                        break;
+                    case 'nivel':
+                        elementToAnimate = document.querySelector(`.nivel-card[onclick*="showDivisionesView(${id},"]`)?.closest('.col-md-6');
+                        break;
+                    case 'division':
+                        // Para divisiones necesitamos buscar por el botón de edición
+                        const editButton = document.querySelector(`.dropdown-item[onclick*="editDivision(${id})"]`);
+                        if (editButton) {
+                            elementToAnimate = editButton.closest('.col-md-6');
+                        }
+                        break;
+                }
+                
+                if (!elementToAnimate) {
+                    console.log(`⚠️ No se encontró el elemento ${type} con ID ${id} en el DOM para animar`);
+                }
+            } catch (domError) {
+                console.error('❌ Error buscando elemento en el DOM:', domError);
+                // Continuar con la eliminación aunque no se encuentre el elemento
+            }
+            
+            // Determinar la URL correcta según el tipo de elemento
+            let url;
+            switch(type) {
+                case 'modalidad':
+                    url = `/admin/modalidades/${id}`;
+                    break;
+                case 'nivel':
+                    url = `/admin/niveles/${id}`;
+                    break;
+                case 'division':
+                    url = `/admin/divisiones/${id}`;
+                    break;
+                default:
+                    throw new Error(`Tipo de elemento desconocido: ${type}`);
+            }
+            
+            console.log(`📡 Enviando solicitud DELETE al servidor: ${url}`);
+            const response = await fetch(url, {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' }
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                console.log('✅ Respuesta del servidor:', result);
+                
+                // Preparar mensaje de éxito con información de eliminación en cascada
+                let successMessage = `${type.charAt(0).toUpperCase() + type.slice(1)} "${nombreCompleto}" eliminado exitosamente`;
+                
+                // Añadir información sobre elementos eliminados en cascada
+                if (result.stats) {
+                    if (type === 'modalidad' && (result.stats.niveles > 0 || result.stats.divisiones > 0)) {
+                        successMessage += `<br><small class="text-muted">También se eliminaron: `;
+                        const detalles = [];
+                        if (result.stats.niveles > 0) {
+                            detalles.push(`${result.stats.niveles} niveles`);
+                        }
+                        if (result.stats.divisiones > 0) {
+                            detalles.push(`${result.stats.divisiones} divisiones`);
+                        }
+                        successMessage += detalles.join(' y ') + '</small>';
+                    } else if (type === 'nivel' && result.stats.divisiones > 0) {
+                        successMessage += `<br><small class="text-muted">También se eliminaron ${result.stats.divisiones} divisiones</small>`;
+                    }
+                }
+                
+                showNotification(successMessage, 'success');
+                bootstrap.Modal.getInstance(modal).hide();
+                
+                // Determinar comportamiento de navegación después de eliminar
+                if (type === 'modalidad') {
+                    // Si eliminamos una modalidad, siempre volvemos a la vista de modalidades
+                    console.log('🏠 Volviendo a vista de modalidades tras eliminar modalidad');
+                    showModalidadesView();
+                } else if (type === 'nivel') {
+                    if (contextoActual.vistaActual === 'divisiones' && 
+                        parseInt(contextoActual.nivelId) === parseInt(id)) {
+                        // Si estamos viendo divisiones del nivel que acabamos de eliminar,
+                        // volver a la vista de niveles de la modalidad correspondiente
+                        console.log('🔙 Volviendo a vista de niveles tras eliminar nivel actual');
+                        if (contextoActual.modalidadId && contextoActual.modalidadNombre) {
+                            showNivelesView(contextoActual.modalidadId, contextoActual.modalidadNombre);
+                        } else {
+                            showModalidadesView();
+                        }
+                    } else {
+                        // Si estamos en otra vista, simplemente recargar
+                        console.log('🔄 Recargando vista actual tras eliminar nivel');
+                        reloadCurrentView();
+                    }
+                } else if (type === 'division') {
+                    // Para divisiones, simplemente recargamos la vista actual
+                    console.log('🔄 Recargando vista de divisiones tras eliminar división');
+                    reloadCurrentView();
+                }
+                
+                // Animar la eliminación del elemento si lo encontramos
+                if (elementToAnimate) {
+                    try {
+                        // Agregar clase para la animación de desvanecimiento
+                        elementToAnimate.style.transition = 'all 0.5s ease';
+                        elementToAnimate.style.opacity = '0';
+                        elementToAnimate.style.transform = 'scale(0.8)';
+                        
+                        // Remover el elemento después de la animación
+                        setTimeout(() => {
+                            try {
+                                if (elementToAnimate && elementToAnimate.parentNode) {
+                                    elementToAnimate.parentNode.removeChild(elementToAnimate);
+                                }
+                            } catch (removeError) {
+                                console.warn('⚠️ No se pudo remover el elemento del DOM:', removeError);
+                                // No es crítico si falla la animación
+                            }
+                        }, 500);
+                    } catch (animationError) {
+                        console.warn('⚠️ Error en la animación:', animationError);
+                        // No es crítico si falla la animación
+                    }
+                }
+            } else {
+                // Manejar errores de respuesta HTTP
+                let errorMessage;
+                try {
+                    const errorData = await response.json();
+                    errorMessage = errorData.message || errorData.error || `Error al eliminar ${type}`;
+                } catch (jsonError) {
+                    // Si la respuesta no es JSON válido
+                    console.error('❌ Error al procesar respuesta:', jsonError);
+                    errorMessage = `Error al eliminar ${type}: ${response.status} ${response.statusText}`;
+                }
+                
+                console.error('❌ Error del servidor:', errorMessage);
+                showNotification(errorMessage, 'error');
+            }
+        } catch (error) {
+            console.error(`❌ Error eliminando ${type}:`, error);
+            showNotification(`Error al eliminar ${type}. Intente nuevamente.`, 'error');
+        }
+    }
+
+    // La función reloadDataAfterDelete ha sido reemplazada por reloadCurrentView
+    // que detecta automáticamente la vista actual y recarga los datos correspondientes
+
+    // ACTUALIZACIÓN DE NOMBRE COMPLETO DE DIVISIÓN (sin DOMContentLoaded duplicado)
+    function setupDivisionNameUpdate() {
+        const nivelSelect = document.getElementById('divisionNivel');
+        const letraInput = document.getElementById('divisionLetra');
+        const nombreCompletoInput = document.getElementById('divisionNombreCompleto');
+        
+        function updateNombreCompleto() {
+            if (nivelSelect && letraInput && nombreCompletoInput) {
+                const nivelSelected = nivelSelect.options[nivelSelect.selectedIndex];
+                const letra = letraInput.value.trim().toUpperCase();
+                
+                if (nivelSelected && nivelSelected.value && letra) {
+                    const nivelText = nivelSelected.text.split(' (')[0]; // Quitar modalidad del texto
+                    nombreCompletoInput.value = `${nivelText} "${letra}"`;
+                } else {
+                    nombreCompletoInput.value = '';
+                }
+            }
+        }
+        
+        if (nivelSelect && letraInput) {
+            nivelSelect.addEventListener('change', updateNombreCompleto);
+            letraInput.addEventListener('input', updateNombreCompleto);
+        }
+    }
+
+    // EVENTOS DE PESTAÑAS Y FUNCIONES GLOBALES
+    
+    // Hacer las funciones globales para que puedan ser llamadas desde onclick
+    window.showCreateModalidadModal = showCreateModalidadModal;
+    window.showCreateNivelModal = showCreateNivelModal;
+    window.showCreateDivisionModal = showCreateDivisionModal;
+    window.editModalidad = editModalidad;
+    window.editNivel = editNivel;
+    window.editDivision = editDivision;
+    window.deleteModalidad = deleteModalidad;
+    window.deleteNivel = deleteNivel;
+    window.deleteDivision = deleteDivision;
+    window.saveModalidad = saveModalidad;
+    window.saveNivel = saveNivel;
+    window.saveDivision = saveDivision;
+    window.confirmDeleteAcademico = confirmDeleteAcademico;
+    window.loadModalidades = loadModalidades;
+    window.loadNiveles = loadNiveles;
+    window.loadDivisiones = loadDivisiones;
+    window.loadJerarquia = loadJerarquia;
+    window.loadEstructuraStats = loadEstructuraStats;
+    
+    // Funciones de materias
+    window.loadMaterias = loadMaterias;
+    window.showCreateMateriaModal = showCreateMateriaModal;
+    window.editMateria = editMateria;
+    window.deleteMateria = deleteMateria;
+    window.saveMateria = saveMateria;
+    // Eliminar la siguiente línea porque confirmDeleteMateria no existe y la función correcta es materiaConfirmDelete
+    // window.confirmDeleteMateria = confirmDeleteMateria;
+    window.searchMaterias = searchMaterias;
+    
+    // Funciones de navegación
+    window.showModalidadesView = showModalidadesView;
+    window.showNivelesView = showNivelesView;
+    window.showDivisionesView = showDivisionesView;
+    window.loadDivisionesForNivel = loadDivisionesForNivel;
+
+    // ========================================
+    // INICIALIZACIÓN ÚNICA Y CENTRALIZADA
+    // ========================================
+    // Variable para evitar inicialización múltiple
+    let estructuraAcademicaIniciada = false;
+    
+    function initializeEstructuraAcademica() {
+        if (estructuraAcademicaIniciada) {
+            console.log('⏩ Estructura académica ya inicializada, saltando...');
+            return;
+        }
+        
+        console.log('🎯 Inicializando estructura académica ÚNICA VEZ...');
+        estructuraAcademicaIniciada = true;
+        
+        // TEMPORALMENTE DESHABILITADO PARA EVITAR BUCLE INFINITO
+        console.log('⚠️ Inicialización de estructura académica deshabilitada temporalmente');
+        return;
+        
+        // Configurar división name update
+        setupDivisionNameUpdate();
+        
+        // Configurar eventos de filtros
+        setupFilterEvents();
+        
+        // CARGAR DATOS UNA SOLA VEZ
+        console.log('📊 Cargando estadísticas...');
+        loadEstructuraStats();
+        
+        console.log('🏫 Cargando modalidades...');
+        loadModalidades();
+        
+        // Asegurar que se muestre la vista de modalidades
+        showModalidadesView();
+    }
+    
+    function setupFilterEvents() {
+        // Eventos para los filtros
+        const filterModalidadNiveles = document.getElementById('filter-modalidad-niveles');
+        const filterModalidadDivisiones = document.getElementById('filter-modalidad-divisiones');
+        const filterNivelDivisiones = document.getElementById('filter-nivel-divisiones');
+        
+        if (filterModalidadNiveles) {
+            filterModalidadNiveles.addEventListener('change', () => {
+                displayNiveles(estructuraData.niveles);
+            });
+        }
+        
+        if (filterModalidadDivisiones) {
+            filterModalidadDivisiones.addEventListener('change', () => {
+                displayDivisiones(estructuraData.divisiones);
+            });
+        }
+        
+        if (filterNivelDivisiones) {
+            filterNivelDivisiones.addEventListener('change', () => {
+                displayDivisiones(estructuraData.divisiones);
+            });
+        }
+
+        // Eventos para la vista jerárquica
+        const vistaCompacta = document.getElementById('vista-compacta');
+        const vistaExpandida = document.getElementById('vista-expandida');
+        
+        if (vistaCompacta && vistaExpandida) {
+            vistaCompacta.addEventListener('change', () => {
+                if (document.getElementById('jerarquia-panel').classList.contains('show')) {
+                    loadJerarquia();
+                }
+            });
+            vistaExpandida.addEventListener('change', () => {
+                if (document.getElementById('jerarquia-panel').classList.contains('show')) {
+                    loadJerarquia();
+                }
+            });
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('DOM cargado - Inicializando aplicación...');
+        
+        // Inicializar usuarios
+        loadUsers();
+        
+        // Esperar un momento para que el DOM se estabilice
+        setTimeout(() => {
+            const academicoContent = document.getElementById('academico-content');
+            if (academicoContent) {
+                initializeEstructuraAcademica();
+            }
+        }, 500);
+    });
+
+    async function saveMateria() {
+        const form = document.getElementById('materiaForm');
+        if (!form) {
+            console.error('❌ Error: No se encontró el formulario de materia');
+            showNotification('Error al guardar materia', 'error');
+            return;
+        }
+        
+        const materiaId = document.getElementById('materiaId')?.value || '';
+        const isEdit = materiaId !== '';
+        
+        // Validar formulario
+        if (!form.checkValidity()) {
+            form.classList.add('was-validated');
+            return;
+        }
+        
+        // Verificar que todos los elementos necesarios existan
+        const materiaNombre = document.getElementById('materiaNombre');
+        const materiaDescripcion = document.getElementById('materiaDescripcion');
+        const materiaCodigo = document.getElementById('materiaCodigo');
+        const materiaModalidad = document.getElementById('materiaModalidad');
+        const materiaHoras = document.getElementById('materiaHoras');
+        
+        if (!materiaNombre || !materiaDescripcion || !materiaCodigo || !materiaModalidad || !materiaHoras) {
+            console.error('❌ Error: No se encontraron todos los campos del formulario');
+            showNotification('Error al guardar materia: Faltan campos del formulario', 'error');
+            return;
+        }
+        
+        const data = {
+            name: materiaNombre.value.trim(),
+            description: materiaDescripcion.value.trim(),
+            codigo: materiaCodigo.value.trim(),
+            modalidad_id: materiaModalidad.value || null,
+            horas_semanales: materiaHoras.value || 0
+        };
+        
+        try {
+            const url = isEdit ? `/admin/materias/${materiaId}` : '/admin/materias';
+            const method = isEdit ? 'PUT' : 'POST';
+            
+            const response = await fetch(url, {
+                method: method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            
+            const result = await response.json();
+            
+            if (response.ok) {
+                const message = isEdit ? 'Materia actualizada exitosamente' : 'Materia creada exitosamente';
+                showNotification(message, 'success');
+                
+                const materiaModal = document.getElementById('materiaModal');
+                if (materiaModal) {
+                    const modalInstance = bootstrap.Modal.getInstance(materiaModal);
+                    if (modalInstance) {
+                        modalInstance.hide();
+                    }
+                }
+                
+                // Recargar materias
+                if (typeof loadMaterias === 'function') {
+                    loadMaterias();
+                }
+            } else {
+                showNotification(result.error || 'Error al guardar materia', 'error');
+            }
+        } catch (error) {
+            console.error('Error guardando materia:', error);
+            showNotification('Error al guardar materia', 'error');
+        }
+    }
+</script>

@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Alumnado - Colegio Ernesto Guevara</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <style>
+        .navbar-red {
+            background: linear-gradient(135deg, #8B0000, #dc3545) !important;
+        }
+        .btn-red {
+            background-color: #dc3545;
+            border-color: #dc3545;
+            color: white;
+            padding: 15px 30px;
+            font-size: 1.1rem;
+            margin: 5px;
+        }
+        .btn-red:hover {
+            background-color: #a71d2a;
+            border-color: #a71d2a;
+            color: white;
+        }
+        .main-title {
+            color: #333;
+            font-weight: bold;
+            font-size: 2.5rem;
+        }
+        .section-title {
+            color: #666;
+            font-weight: 600;
+            font-size: 1.5rem;
+        }
+        footer {
+            background-color: #272530;
+            color: white;
+            padding: 2rem 0;
+            margin-top: 4rem;
+        }
+        .materias-container {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 2rem;
+            margin: 2rem 0;
+        }
+        .notas-table {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 2rem;
+            margin: 2rem 0;
+            display: none;
+        }
+        .table-notas th {
+            background-color: #dc3545;
+            color: white;
+            text-align: center;
+        }
+        .table-notas td {
+            text-align: center;
+            vertical-align: middle;
+        }
+        .alumno-name {
+            text-align: left !important;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body class="bg-light">
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark navbar-red">
+        <div class="container">
+            <!-- Logo y nombre del sistema a la izquierda -->
+            <div class="d-flex align-items-center">
+                <i class="bi bi-mortarboard text-white me-2 fs-4"></i>
+                <span class="navbar-brand mb-0 h4 fw-bold text-white">Aula Digital</span>
+            </div>
+            
+            <!-- Botón cerrar sesión a la derecha -->
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link text-white fw-bold" href="/logout">
+                    <i class="bi bi-box-arrow-right"></i> Cerrar Sesión
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Contenido Principal -->
+    <div class="container mt-4">
+        <!-- Título Principal -->
+        <div class="text-center mb-4">
+            <h1 class="main-title">Dashboard del Alumnado</h1>
+        </div>
+
+        <!-- Sección Seleccionar Materia -->
+        <div class="materias-container">
+            <h2 class="section-title mb-4">Seleccionar Materia</h2>
+            
+            <div class="row text-center">
+                <% materias.forEach(materia => { %>
+                    <div class="col-md-4 col-lg-3 mb-3">
+                        <button class="btn btn-red w-100" onclick="mostrarNotas('<%= materia.name %>', '<%= materia.id %>')">
+                            <%= materia.name %>
+                        </button>
+                    </div>
+                <% }); %>
+            </div>
+        </div>
+
+        <!-- Tabla de Notas (inicialmente oculta) -->
+        <div class="notas-table" id="notasTable">
+            <h3 class="section-title mb-4">Notas de <span id="materiaSeleccionada"></span></h3>
+            
+            <div class="table-responsive">
+                <table class="table table-bordered table-notas">
+                    <thead>
+                        <tr>
+                            <th>Alumno</th>
+                            <th>1er Informe</th>
+                            <th>2do Informe</th>
+                            <th>1er Cuatrimestre</th>
+                            <th>3er Informe</th>
+                            <th>4to Informe</th>
+                            <th>2do Cuatrimestre</th>
+                            <th>Nota Final</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% alumnos.forEach(alumno => { %>
+                            <tr data-student-id="<%= alumno.id %>">
+                                <td class="alumno-name">
+                                    <%= alumno.first_name %> <%= alumno.last_name %>
+                                    <small class="text-muted d-block">DNI: <%= alumno.dni %> | Curso: <%= alumno.curso %></small>
+                                </td>
+                                <td><input type="number" class="form-control text-center" min="1" max="10" placeholder="-" name="informe1"></td>
+                                <td><input type="number" class="form-control text-center" min="1" max="10" placeholder="-" name="informe2"></td>
+                                <td><input type="number" class="form-control text-center" min="1" max="10" placeholder="-" name="cuatrimestre1" readonly></td>
+                                <td><input type="number" class="form-control text-center" min="1" max="10" placeholder="-" name="informe3"></td>
+                                <td><input type="number" class="form-control text-center" min="1" max="10" placeholder="-" name="informe4"></td>
+                                <td><input type="number" class="form-control text-center" min="1" max="10" placeholder="-" name="cuatrimestre2" readonly></td>
+                                <td><input type="number" class="form-control text-center" min="1" max="10" placeholder="-" name="final" readonly></td>
+                            </tr>
+                        <% }); %>
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="text-center mt-4">
+                <button class="btn btn-red btn-lg" onclick="guardarNotas()">
+                    <i class="bi bi-save"></i> Guardar Notas
+                </button>
+                <button class="btn btn-outline-secondary btn-lg ms-3" onclick="ocultarNotas()">
+                    <i class="bi bi-x-circle"></i> Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pie de Página -->
+    <footer>
+        <div class="container text-center">
+            <p class="mb-0">&copy; <%= new Date().getFullYear() %> Colegio Ernesto Guevara. Todos los derechos reservados.</p>
+            <p class="mb-0">Sistema de Gestión Educativa</p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let currentSubjectId = null;
+        
+        function mostrarNotas(materia, subjectId) {
+            currentSubjectId = subjectId;
+            document.getElementById('materiaSeleccionada').textContent = materia;
+            document.getElementById('notasTable').style.display = 'block';
+            
+            // Cargar notas existentes para esta materia
+            cargarNotasExistentes(subjectId);
+            
+            // Scroll suave hacia la tabla
+            document.getElementById('notasTable').scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        function ocultarNotas() {
+            document.getElementById('notasTable').style.display = 'none';
+            currentSubjectId = null;
+        }
+        
+        async function cargarNotasExistentes(subjectId) {
+            try {
+                const response = await fetch(`/api/grades/${subjectId}`);
+                if (response.ok) {
+                    const notas = await response.json();
+                    // Llenar los campos con las notas existentes
+                    notas.forEach(nota => {
+                        const row = document.querySelector(`tr[data-student-id="${nota.student_id}"]`);
+                        if (row) {
+                            const input = row.querySelector(`input[name="${nota.grade_type}"]`);
+                            if (input) {
+                                input.value = nota.grade;
+                            }
+                        }
+                    });
+                }
+            } catch (error) {
+                console.log('No hay notas existentes para esta materia');
+            }
+        }
+        
+        async function guardarNotas() {
+            if (!currentSubjectId) return;
+            
+            const materia = document.getElementById('materiaSeleccionada').textContent;
+            const notasData = [];
+            
+            // Recopilar todas las notas de la tabla
+            const rows = document.querySelectorAll('#notasTable tbody tr');
+            rows.forEach(row => {
+                const studentId = row.dataset.studentId;
+                const inputs = row.querySelectorAll('input[type="number"]:not([readonly])');
+                
+                inputs.forEach(input => {
+                    if (input.value && input.value.trim() !== '') {
+                        notasData.push({
+                            student_id: studentId,
+                            subject_id: currentSubjectId,
+                            grade_type: input.name,
+                            grade: parseFloat(input.value)
+                        });
+                    }
+                });
+            });
+            
+            try {
+                const response = await fetch('/api/grades', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ grades: notasData })
+                });
+                
+                if (response.ok) {
+                    alert(`Notas guardadas exitosamente para la materia: ${materia}`);
+                } else {
+                    alert('Error al guardar las notas');
+                }
+            } catch (error) {
+                alert('Error al guardar las notas');
+            }
+        }
+
+        // Calcular promedios automáticamente
+        document.addEventListener('DOMContentLoaded', function() {
+            const table = document.querySelector('.table-notas tbody');
+            
+            table.addEventListener('input', function(e) {
+                if (e.target.type === 'number') {
+                    const row = e.target.closest('tr');
+                    const inputs = row.querySelectorAll('input[type="number"]:not([readonly])');
+                    const readonlyInputs = row.querySelectorAll('input[readonly]');
+                    
+                    // Calcular 1er cuatrimestre (promedio de 1er y 2do informe)
+                    const informe1 = parseFloat(inputs[0].value) || 0;
+                    const informe2 = parseFloat(inputs[1].value) || 0;
+                    if (informe1 > 0 && informe2 > 0) {
+                        readonlyInputs[0].value = ((informe1 + informe2) / 2).toFixed(1);
+                    }
+                    
+                    // Calcular 2do cuatrimestre (promedio de 3er y 4to informe)
+                    const informe3 = parseFloat(inputs[2].value) || 0;
+                    const informe4 = parseFloat(inputs[3].value) || 0;
+                    if (informe3 > 0 && informe4 > 0) {
+                        readonlyInputs[1].value = ((informe3 + informe4) / 2).toFixed(1);
+                    }
+                    
+                    // Calcular nota final (promedio de ambos cuatrimestres)
+                    const cuatr1 = parseFloat(readonlyInputs[0].value) || 0;
+                    const cuatr2 = parseFloat(readonlyInputs[1].value) || 0;
+                    if (cuatr1 > 0 && cuatr2 > 0) {
+                        readonlyInputs[2].value = ((cuatr1 + cuatr2) / 2).toFixed(1);
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html> 

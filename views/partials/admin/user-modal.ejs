@@ -1,0 +1,137 @@
+<!-- Modal principal de usuario -->
+<div class="modal fade" id="userModal" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="userModalTitle">
+                    <i class="bi bi-person-plus me-2"></i>Crear Usuario
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="userForm">
+                    <input type="hidden" id="userId">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-medium">
+                                <i class="bi bi-person me-1"></i>Nombre *
+                            </label>
+                            <input type="text" class="form-control" id="firstName" required>
+                            <div class="invalid-feedback">El nombre es requerido</div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-medium">
+                                <i class="bi bi-person me-1"></i>Apellido *
+                            </label>
+                            <input type="text" class="form-control" id="lastName" required>
+                            <div class="invalid-feedback">El apellido es requerido</div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-medium">
+                                <i class="bi bi-envelope me-1"></i>Email *
+                            </label>
+                            <input type="email" class="form-control" id="email" required>
+                            <div class="invalid-feedback">Email válido es requerido</div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-medium">
+                                <i class="bi bi-card-text me-1"></i>DNI *
+                            </label>
+                            <input type="text" class="form-control" id="dni" required maxlength="8" pattern="[0-9]{7,8}">
+                            <div class="invalid-feedback">DNI válido es requerido (7-8 dígitos)</div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-medium">
+                                <i class="bi bi-award me-1"></i>Rol *
+                            </label>
+                            <select class="form-select" id="role" required>
+                                <option value="">Seleccionar rol</option>
+                                <option value="student">📚 Estudiante</option>
+                                <option value="profesor">👨‍🏫 Profesor</option>
+                                <option value="admin">🛡️ Administrador</option>
+                            </select>
+                            <div class="invalid-feedback">Debe seleccionar un rol</div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-medium">
+                                <i class="bi bi-book me-1"></i>Curso/División
+                            </label>
+                            <input type="text" class="form-control" id="curso" placeholder="Ej: 5to A, Matemáticas, etc.">
+                            <small class="form-text text-muted">Curso para estudiantes o especialidad para profesores</small>
+                        </div>
+                    </div>
+
+                    <div class="mb-3" id="passwordField">
+                        <label class="form-label fw-medium">
+                            <i class="bi bi-lock me-1"></i>Contraseña *
+                        </label>
+                        <div class="input-group">
+                            <input type="password" class="form-control" id="password" required minlength="6">
+                            <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility()">
+                                <i class="bi bi-eye" id="passwordToggleIcon"></i>
+                            </button>
+                        </div>
+                        <div class="form-text">
+                            <small>
+                                <i class="bi bi-info-circle me-1"></i>Mínimo 6 caracteres. 
+                                <span id="passwordEditText" style="display: none;">Dejar vacío para mantener la contraseña actual.</span>
+                            </small>
+                        </div>
+                        <div class="invalid-feedback">La contraseña debe tener al menos 6 caracteres</div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x me-1"></i>Cancelar
+                </button>
+                <button type="button" class="btn btn-primary" onclick="saveUser()">
+                    <i class="bi bi-check-lg me-1"></i>
+                    <span id="saveButtonText">Guardar</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de confirmación de eliminación -->
+<div class="modal fade" id="deleteUserModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">
+                    <i class="bi bi-exclamation-triangle me-2"></i>Confirmar Eliminación
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center">
+                    <i class="bi bi-person-x text-danger" style="font-size: 3rem;"></i>
+                    <h5 class="mt-3">¿Estás seguro?</h5>
+                    <p class="text-muted">
+                        Estás a punto de eliminar al usuario:<br>
+                        <strong id="deleteUserName" class="text-danger"></strong>
+                    </p>
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle me-1"></i>
+                        <strong>Esta acción no se puede deshacer.</strong>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x me-1"></i>Cancelar
+                </button>
+                <button type="button" class="btn btn-danger" onclick="confirmDeleteUser()">
+                    <i class="bi bi-trash me-1"></i>Eliminar Usuario
+                </button>
+            </div>
+        </div>
+    </div>
+</div> 

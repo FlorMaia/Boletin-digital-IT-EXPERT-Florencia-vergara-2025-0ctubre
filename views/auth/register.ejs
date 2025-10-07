@@ -1,0 +1,282 @@
+<!-- ========================================
+     PÁGINA DE REGISTRO DE USUARIOS
+     ========================================
+     Este archivo contiene el formulario de registro
+     para nuevos usuarios del sistema educativo.
+     Permite registrar estudiantes, profesores y administradores.
+-->
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro - Colegio Ernesto Guevara</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <style>
+        body {
+            background:  linear-gradient(135deg, #000000 0%, #dc3545 100%);
+            min-height: 100vh;
+        }
+        
+        /* Degradado en una parte específica del fondo */
+        .container::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 50%;
+            height: 100vh;
+            
+            z-index: -1;
+        }
+        .register-card {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        .card-header-red {
+            background-color: #dc3545;
+            border-radius: 15px 15px 0 0;
+        }
+        .btn-red {
+            background-color: #dc3545;
+            border-color: #dc3545;
+        }
+        .btn-red:hover {
+            background-color: #a71d2a;
+            border-color: #a71d2a;
+        }
+        
+        /* Estilos del formulario */
+        .card-body {
+            background: white;
+            padding: 2rem !important;
+            border-radius: 0 0 15px 15px;
+        }
+        
+        /* Formulario limpio */
+        .card-body form {
+            background: transparent;
+            padding: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="row justify-content-center min-vh-100 align-items-center py-4">
+            <div class="col-md-10 col-lg-8">
+                <!-- ========================================
+                     TARJETA DEL FORMULARIO
+                     ======================================== -->
+                <div class="card register-card">
+                    <div class="card-header card-header-red text-white text-center py-4">
+                        <h3 class="mb-1">
+                            <i class="bi bi-mortarboard"></i>  <!-- Icono de graduación -->
+                            Colegio Ernesto Guevara  <!-- Nombre del colegio -->
+                        </h3>
+                        <p class="mb-0">Registro de Usuario</p>  <!-- Subtítulo -->
+                    </div>
+                    <div class="card-body p-4">
+                        <!-- ========================================
+                             MENSAJES DE ERROR (FLASH MESSAGES)
+                             ======================================== -->
+                        <!-- Mensaje de error general -->
+                        <% if (locals.error_msg && locals.error_msg.length > 0) { %>
+                            <div class="alert alert-danger">
+                                <i class="bi bi-exclamation-triangle"></i> <%= locals.error_msg %>  <!-- Icono de advertencia + mensaje -->
+                            </div>
+                        <% } %>
+
+                        <!-- Lista de errores de validación -->
+                        <% if (locals.errors && locals.errors.length > 0) { %>
+                            <div class="alert alert-danger">
+                                <ul class="mb-0">
+                                    <% locals.errors.forEach(error => { %>  <!-- Recorre cada error -->
+                                        <li><%= error.msg %></li>  <!-- Muestra el mensaje de error -->
+                                    <% }); %>
+                                </ul>
+                            </div>
+                        <% } %>
+
+                        <!-- ========================================
+                             FORMULARIO DE REGISTRO
+                             ======================================== -->
+                        <form action="/register" method="POST">  <!-- Envía datos por POST a /register -->
+                            <!-- ========================================
+                                 FILA 1: NOMBRE Y APELLIDO
+                                 ======================================== -->
+                            <div class="row">
+                                <!-- Campo de nombre -->
+                                <div class="col-md-6 mb-3">
+                                    <label for="first_name" class="form-label fw-bold">
+                                        <i class="bi bi-person text-danger"></i> Nombre *  <!-- Icono + texto -->
+                                    </label>
+                                    <input type="text" class="form-control" id="first_name" name="first_name" 
+                                           value="<%= locals.formData ? locals.formData.first_name || '' : '' %>"  <!-- Mantiene valor si hay error -->
+                                           placeholder="Ingresa tu nombre" required>  <!-- Campo obligatorio -->
+                                </div>
+                                
+                                <!-- Campo de apellido -->
+                                <div class="col-md-6 mb-3">
+                                    <label for="last_name" class="form-label fw-bold">
+                                        <i class="bi bi-person text-danger"></i> Apellido *  <!-- Icono + texto -->
+                                    </label>
+                                    <input type="text" class="form-control" id="last_name" name="last_name" 
+                                           value="<%= locals.formData ? locals.formData.last_name || '' : '' %>"  <!-- Mantiene valor si hay error -->
+                                           placeholder="Ingresa tu apellido" required>  <!-- Campo obligatorio -->
+                                </div>
+                            </div>
+
+                            <!-- ========================================
+                                 FILA 2: DNI Y EMAIL
+                                 ======================================== -->
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="dni" class="form-label fw-bold">
+                                        <i class="bi bi-card-text text-danger"></i> DNI *
+                                    </label>
+                                    <input type="text" class="form-control" id="dni" name="dni" 
+                                           value="<%= locals.formData ? locals.formData.dni || '' : '' %>"  <!-- Mantiene valor si hay error -->
+                                           placeholder="Ej: 12345678" maxlength="8" required>  <!-- Máximo 8 caracteres -->
+                                </div>
+                                
+                                <!-- Campo de email -->
+                                <div class="col-md-6 mb-3">
+                                    <label for="email" class="form-label fw-bold">
+                                        <i class="bi bi-envelope text-danger"></i> Gmail *  <!-- Icono de email -->
+                                    </label>
+                                    <input type="email" class="form-control" id="email" name="email" 
+                                           value="<%= locals.formData ? locals.formData.email || '' %>"  <!-- Mantiene valor si hay error -->
+                                           placeholder="ejemplo@gmail.com" required>  <!-- Validación de email -->
+                                </div>
+                            </div>
+                            
+                            <!-- ========================================
+                                 FILA 3: CURSO Y TIPO DE USUARIO
+                                 ======================================== -->
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="curso" class="form-label fw-bold">
+                                        <i class="bi bi-building text-danger"></i> Curso  <!-- Icono de edificio -->
+                                    </label>
+                                    <input type="text" class="form-control" id="curso" name="curso" 
+                                           value="<%= locals.formData ? locals.formData.curso || '' : '' %>"  <!-- Mantiene valor si hay error -->
+                                           placeholder="Ej: 7°1, 1° Año, etc.">  <!-- Campo opcional -->
+                                    <small class="text-muted">Solo para estudiantes</small>  <!-- Ayuda contextual -->
+                                </div>
+
+                                <!-- Selector de tipo de usuario -->
+                                <div class="col-md-6 mb-3">
+                                    <label for="role" class="form-label fw-bold">
+                                        <i class="bi bi-person-badge text-danger"></i> Tipo de Usuario *  <!-- Icono de identificación -->
+                                    </label>
+                                    <select class="form-select" id="role" name="role" required>  <!-- Campo obligatorio -->
+                                        <option value="">Selecciona un tipo</option>  <!-- Opción por defecto -->
+                                        <!-- Opción de estudiante -->
+                                        <option value="student" <%= locals.formData && locals.formData.role === 'student' ? 'selected' : '' %>>
+                                            🎓 Estudiante  <!-- Emoji + texto -->
+                                        </option>
+                                        <!-- Opción de profesor -->
+                                        <option value="profesor" <%= locals.formData && locals.formData.role === 'profesor' ? 'selected' : '' %>>
+                                            👨‍🏫 Profesor  <!-- Emoji + texto -->
+                                        </option>
+                                        <!-- Opción de administrador -->
+                                        <option value="admin" <%= locals.formData && locals.formData.role === 'admin' ? 'selected' : '' %>>
+                                            ⚙️ Administrador  <!-- Emoji + texto -->
+                                        </option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <!-- ========================================
+                                 FILA 4: CONTRASEÑAS
+                                 ======================================== -->
+                            <div class="row">
+                                <!-- Campo de contraseña -->
+                                <div class="col-md-6 mb-3">
+                                    <label for="password" class="form-label fw-bold">
+                                        <i class="bi bi-lock text-danger"></i> Contraseña *  <!-- Icono de candado -->
+                                    </label>
+                                    <input type="password" class="form-control" id="password" name="password" 
+                                           placeholder="Mínimo 6 caracteres" required>  <!-- Campo obligatorio -->
+                                    <div class="form-text">
+                                        Debe incluir mayúscula, minúscula y número  <!-- Ayuda para crear contraseña segura -->
+                                    </div>
+                                </div>
+                                
+                                <!-- Campo de confirmación de contraseña -->
+                                <div class="col-md-6 mb-3">
+                                    <label for="confirmPassword" class="form-label fw-bold">
+                                        <i class="bi bi-lock-fill text-danger"></i> Confirmar Contraseña *  <!-- Icono de candado cerrado -->
+                                    </label>
+                                    <input type="password" class="form-control" id="confirmPassword" name="confirmPassword" 
+                                           placeholder="Repite la contraseña" required>  <!-- Campo obligatorio -->
+                                </div>
+                            </div>
+                            
+                            <!-- ========================================
+                                 BOTÓN DE ENVÍO
+                                 ======================================== -->
+                            <button type="submit" class="btn btn-red btn-lg w-100 text-white fw-bold">
+                                <i class="bi bi-person-plus"></i> Registrarse  <!-- Icono de agregar persona + texto -->
+                            </button>
+                        </form>
+                        
+                        <!-- ========================================
+                             SEPARADOR Y ENLACES ADICIONALES
+                             ======================================== -->
+                        <hr>  <!-- Línea separadora -->
+                        <div class="text-center">
+                            <!-- Enlace para usuarios existentes -->
+                            <p class="mb-2">¿Ya tienes cuenta? 
+                                <a href="/login" class="text-danger fw-bold text-decoration-none">Inicia sesión aquí</a>  <!-- Enlace al login -->
+                            </p>
+                            <!-- Botón para volver al inicio -->
+                            <a href="/" class="btn btn-outline-danger">
+                                <i class="bi bi-house"></i> Volver al inicio  <!-- Icono de casa + texto -->
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Validación de DNI (solo números)
+        document.getElementById('dni').addEventListener('input', function() {
+            this.value = this.value.replace(/[^0-9]/g, '');
+        });
+
+        // Mostrar/ocultar campo curso según el rol
+        // Esta sección agrega un evento de escucha al elemento con ID 'role' (probablemente un select o input para seleccionar el rol del usuario).
+// El evento 'change' se activa cada vez que el usuario cambia la selección del rol.
+        document.getElementById('role').addEventListener('change', function() {
+              // Obtiene el elemento del campo 'curso' (probablemente un input o select para el curso).
+    // Etiqueta: Identificación del campo curso - Esto selecciona el elemento HTML con ID 'curso' para manipularlo.
+            const cursoField = document.getElementById('curso');
+            // Busca el contenedor más cercano del campo 'curso' que tenga la clase CSS '.col-md-6' (típicamente un div en un grid de Bootstrap).
+    // Etiqueta: Búsqueda del contenedor - Esto permite ocultar/mostrar todo el bloque que contiene el campo, no solo el input.
+            const cursoContainer = cursoField.closest('.col-md-6');
+             // Verifica si el valor seleccionado en el rol es 'student' (estudiante).
+    // Etiqueta: Condición para rol de estudiante - Si es estudiante, el campo curso debe ser visible y obligatorio.
+            if (this.value === 'student') {
+                cursoContainer.style.display = 'block';
+                cursoField.setAttribute('required', 'required');
+               
+            } else {
+                  // En caso de que no sea estudiante (por ejemplo, profesor u otro rol), muestra el contenedor pero lo hace opcional.
+        // Nota: En este código, siempre se muestra ('block'), pero se quita la obligatoriedad.
+        // Etiqueta: Mostrar contenedor (siempre visible) - Mantiene el campo visible para otros roles, pero no lo fuerza.
+                cursoContainer.style.display = 'block'; // Siempre visible pero opcional
+                cursoField.removeAttribute('required');
+              // Remueve el atributo 'required' del campo curso, permitiendo que sea opcional.
+// Etiqueta: Hacer campo opcional - El usuario no necesita llenar el curso si no es estudiante.  
+            }
+        });
+    </script>
+</body>
+</html> 

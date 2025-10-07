@@ -1,0 +1,75 @@
+<div id="reportes" class="tab-content d-none">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="h4 mb-0">Reportes y Estadísticas</h2>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Reportes de Usuarios</h5>
+                </div>
+                <div class="card-body">
+                    <button class="btn btn-outline-primary mb-2 w-100" onclick="generarReporte('usuarios')">
+                        <i class="bi bi-people"></i> Reporte de Usuarios
+                    </button>
+                    <button class="btn btn-outline-primary mb-2 w-100" onclick="generarReporte('profesores')">
+                        <i class="bi bi-person-badge"></i> Reporte de Profesores
+                    </button>
+                    <button class="btn btn-outline-primary mb-2 w-100" onclick="generarReporte('estudiantes')">
+                        <i class="bi bi-mortarboard"></i> Reporte de Estudiantes
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Reportes Académicos</h5>
+                </div>
+                <div class="card-body">
+                    <button class="btn btn-outline-success mb-2 w-100" onclick="generarReporte('materias')">
+                        <i class="bi bi-book"></i> Reporte de Materias
+                    </button>
+                    <button class="btn btn-outline-success mb-2 w-100" onclick="generarReporte('asignaciones')">
+                        <i class="bi bi-calendar-check"></i> Reporte de Asignaciones
+                    </button>
+                    <button class="btn btn-outline-success mb-2 w-100" onclick="generarReporte('calificaciones')">
+                        <i class="bi bi-bar-chart"></i> Reporte de Calificaciones
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Estadísticas Generales</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-3">
+                            <h3 class="text-primary" id="totalUsuarios">0</h3>
+                            <p>Total Usuarios</p>
+                        </div>
+                        <div class="col-md-3">
+                            <h3 class="text-success" id="totalMaterias">0</h3>
+                            <p>Total Materias</p>
+                        </div>
+                        <div class="col-md-3">
+                            <h3 class="text-warning" id="totalAsignaciones">0</h3>
+                            <p>Total Asignaciones</p>
+                        </div>
+                        <div class="col-md-3">
+                            <h3 class="text-info" id="totalGrados">0</h3>
+                            <p>Total Grados</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div> 

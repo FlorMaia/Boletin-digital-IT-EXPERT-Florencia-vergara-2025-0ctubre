@@ -1,0 +1,121 @@
+<div id="dashboard-content" class="tab-content active">
+    <h1 class="section-title">
+        <i class="bi bi-speedometer2 me-2"></i>
+        Dashboard General
+    </h1>
+
+    <!-- Estadísticas Generales -->
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="stat-card card text-white bg-primary p-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title mb-0">Total Usuarios</h6>
+                        <h3 class="mb-0" id="stat-usuarios"><%= stats ? stats.total_usuarios : '0' %></h3>
+                    </div>
+                    <i class="bi bi-people fs-1"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="stat-card card text-white bg-info p-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title mb-0">Estudiantes</h6>
+                        <h3 class="mb-0" id="stat-estudiantes"><%= stats ? stats.total_estudiantes : '0' %></h3>
+                    </div>
+                    <i class="bi bi-mortarboard fs-1"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="stat-card card text-white bg-success p-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title mb-0">Profesores</h6>
+                        <h3 class="mb-0" id="stat-profesores"><%= stats ? stats.total_profesores : '0' %></h3>
+                    </div>
+                    <i class="bi bi-person-workspace fs-1"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="stat-card card text-white bg-warning p-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title mb-0">Divisiones</h6>
+                        <h3 class="mb-0" id="stat-divisiones"><%= stats ? stats.total_divisiones : '0' %></h3>
+                    </div>
+                    <i class="bi bi-building fs-1"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Estadísticas por Modalidad -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="table-container p-4">
+                <h5 class="mb-3">Estadísticas por Modalidad</h5>
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Modalidad</th>
+                                <th>Divisiones</th>
+                                <th>Estudiantes</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% if (statsByModalidad && statsByModalidad.length > 0) { %>
+                                <% statsByModalidad.forEach(stat => { %>
+                                    <tr>
+                                        <td><strong><%= stat.modalidad %></strong></td>
+                                        <td><span class="badge bg-primary"><%= stat.total_divisiones %></span></td>
+                                        <td><span class="badge bg-info"><%= stat.total_estudiantes %></span></td>
+                                    </tr>
+                                <% }); %>
+                            <% } %>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="table-container p-4">
+                <h5 class="mb-3">Últimos Usuarios Registrados</h5>
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Nombre</th>
+                                <th>Rol</th>
+                                <th>Fecha</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% if (recentUsers && recentUsers.length > 0) { %>
+                                <% recentUsers.forEach(user => { %>
+                                    <tr>
+                                        <td><%= user.first_name %> <%= user.last_name %></td>
+                                        <td>
+                                            <% if (user.role === 'student') { %>
+                                                <span class="badge bg-primary">Estudiante</span>
+                                            <% } else if (user.role === 'profesor') { %>
+                                                <span class="badge bg-success">Profesor</span>
+                                            <% } else { %>
+                                                <span class="badge bg-danger">Admin</span>
+                                            <% } %>
+                                        </td>
+                                        <td><small><%= new Date(user.created_at).toLocaleDateString() %></small></td>
+                                    </tr>
+                                <% }); %>
+                            <% } %>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div> 

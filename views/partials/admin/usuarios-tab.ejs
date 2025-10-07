@@ -1,0 +1,180 @@
+<div id="usuarios-content" class="tab-content">
+    <!-- Header de la sección -->
+    <div class="page-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="page-title">
+                    <i class="bi bi-people me-2 text-primary"></i>
+                    Gestión de Usuarios
+                </h1>
+                <p class="text-muted mb-0">Administra usuarios del sistema educativo</p>
+            </div>
+            <div>
+                <button class="btn btn-primary" onclick="showCreateUserModal()">
+                    <i class="bi bi-person-plus me-1"></i> Nuevo Usuario
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Estadísticas rápidas -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="stats-card stats-primary">
+                <div class="stats-info">
+                    <h3 id="total-usuarios" class="stats-number">0</h3>
+                    <p class="stats-label">Total Usuarios</p>
+                </div>
+                <div class="stats-icon">
+                    <i class="bi bi-people"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card stats-success">
+                <div class="stats-info">
+                    <h3 id="total-estudiantes" class="stats-number">0</h3>
+                    <p class="stats-label">Estudiantes</p>
+                </div>
+                <div class="stats-icon">
+                    <i class="bi bi-mortarboard"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card stats-warning">
+                <div class="stats-info">
+                    <h3 id="total-profesores" class="stats-number">0</h3>
+                    <p class="stats-label">Profesores</p>
+                </div>
+                <div class="stats-icon">
+                    <i class="bi bi-person-badge"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card stats-danger">
+                <div class="stats-info">
+                    <h3 id="total-admins" class="stats-number">0</h3>
+                    <p class="stats-label">Administradores</p>
+                </div>
+                <div class="stats-icon">
+                    <i class="bi bi-shield-check"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtros y búsqueda mejorados -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label fw-medium">
+                        <i class="bi bi-search me-1"></i>Buscar Usuario
+                    </label>
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="search-input" 
+                               placeholder="Nombre, email, DNI...">
+                        <button class="btn btn-outline-secondary" type="button" onclick="clearSearch()">
+                            <i class="bi bi-x"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-medium">
+                        <i class="bi bi-funnel me-1"></i>Filtrar por Rol
+                    </label>
+                    <select class="form-select" id="role-filter">
+                        <option value="">Todos los roles</option>
+                        <option value="student">📚 Estudiantes</option>
+                        <option value="profesor">👨‍🏫 Profesores</option>
+                        <option value="admin">🛡️ Administradores</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-medium">
+                        <i class="bi bi-sort-down me-1"></i>Ordenar por
+                    </label>
+                    <select class="form-select" id="sort-filter">
+                        <option value="name">Nombre A-Z</option>
+                        <option value="name_desc">Nombre Z-A</option>
+                        <option value="recent">Más recientes</option>
+                        <option value="role">Por rol</option>
+                    </select>
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button class="btn btn-primary w-100" onclick="searchUsers()">
+                        <i class="bi bi-search me-1"></i> Buscar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabla de usuarios mejorada -->
+    <div class="card">
+        <div class="card-header bg-light">
+            <h5 class="card-title mb-0">
+                <i class="bi bi-table me-1"></i>Lista de Usuarios
+            </h5>
+        </div>
+        <div class="card-body p-0">
+            <div id="users-loading" class="loading-container text-center py-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Cargando...</span>
+                </div>
+                <p class="mt-2 text-muted">Cargando usuarios...</p>
+            </div>
+            
+            <div id="users-table" style="display: none;">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-dark sticky-top">
+                            <tr>
+                                <th>
+                                    <i class="bi bi-person me-1"></i>Usuario
+                                </th>
+                                <th>
+                                    <i class="bi bi-card-text me-1"></i>DNI
+                                </th>
+                                <th>
+                                    <i class="bi bi-award me-1"></i>Rol
+                                </th>
+                                <th>
+                                    <i class="bi bi-book me-1"></i>Curso/Especialidad
+                                </th>
+                                <th class="text-center">
+                                    <i class="bi bi-gear me-1"></i>Acciones
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody id="users-tbody">
+                            <!-- Contenido dinámico -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="no-users" class="text-center py-5" style="display: none;">
+                <i class="bi bi-people text-muted" style="font-size: 3rem;"></i>
+                <h5 class="text-muted mt-2">No se encontraron usuarios</h5>
+                <p class="text-muted">Intenta ajustar los filtros de búsqueda</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Paginación mejorada -->
+    <div id="pagination-container" class="mt-4" style="display: none;">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <small class="text-muted" id="pagination-info"></small>
+            </div>
+            <nav>
+                <ul class="pagination mb-0" id="pagination">
+                    <!-- Paginación dinámica -->
+                </ul>
+            </nav>
+        </div>
+    </div>
+</div> 

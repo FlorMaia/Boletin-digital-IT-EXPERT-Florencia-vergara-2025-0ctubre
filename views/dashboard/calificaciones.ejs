@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %> - Colegio Ernesto Guevara</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <style>
+        .navbar-red { background: linear-gradient(135deg, #8B0000, #dc3545) !important; }
+        .table-calificaciones input {
+            max-width: 80px;
+            text-align: center;
+            border-radius: 0.25rem;
+            border: 1px solid #ced4da;
+        }
+        .table-calificaciones th {
+            vertical-align: middle;
+            text-align: center;
+            font-size: 0.85rem;
+            white-space: nowrap;
+        }
+        .table-calificaciones td {
+            vertical-align: middle;
+        }
+        .table-calificaciones input[readonly] {
+            background-color: #e9ecef;
+            cursor: not-allowed;
+        }
+        .sticky-header {
+            position: sticky;
+            top: 0;
+            z-index: 2;
+        }
+    </style>
+</head>
+<body class="bg-light">
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark navbar-red">
+        <div class="container">
+            <div class="d-flex align-items-center">
+                <i class="bi bi-mortarboard text-white me-2 fs-4"></i>
+                <span class="navbar-brand mb-0 h4 fw-bold text-white">Aula Digital</span>
+            </div>
+            <div class="navbar-nav ms-auto d-flex flex-row align-items-center">
+                 <span class="text-white me-3">
+                    <i class="bi bi-person-badge"></i> 
+                    Prof. <%= user.first_name %> <%= user.last_name %>
+                </span>
+                <a class="nav-link text-white fw-bold" href="/logout">
+                    <i class="bi bi-box-arrow-right"></i> Cerrar Sesión
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Contenido Principal -->
+    <div class="container mt-4">
+        <a href="/dashboard" class="btn btn-outline-secondary mb-3">
+            <i class="bi bi-arrow-left"></i> Volver al Dashboard
+        </a>
+        
+        <div class="card">
+            <div class="card-header bg-white">
+                <h1 class="h3 mb-1"><i class="bi bi-clipboard-data-fill"></i> Gestionar Calificaciones</h1>
+                <p class="mb-0 text-muted">
+                    <strong>Materia:</strong> <%= asignacion.materia_nombre %> | 
+                    <strong>Curso:</strong> <%= asignacion.division_nombre %> | 
+                    <strong>Año Lectivo:</strong> <%= asignacion.año_lectivo %>
+                </p>
+            </div>
+            <div class="card-body">
+                <form id="form-calificaciones">
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover table-calificaciones">
+                            <thead class="table-dark sticky-header">
+                                <tr>
+                                    <th rowspan="2" class="align-middle">N°</th>
+                                    <th rowspan="2" class="align-middle">Legajo</th>
+                                    <th rowspan="2" class="align-middle text-start">Apellido y Nombre</th>
+                                    <th colspan="3">Primer Cuatrimestre</th>
+                                    <th colspan="3">Segundo Cuatrimestre</th>
+                                    <th rowspan="2" class="align-middle">Nota Final</th>
+                                </tr>
+                                <tr>
+                                    <th>Informe 1</th>
+                                    <th>Informe 2</th>
+                                    <th>Cierre 1°C</th>
+                                    <th>Informe 3</th>
+                                    <th>Informe 4</th>
+                                    <th>Cierre 2°C</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <% if (estudiantes.length > 0) { %>
+                                    <% estudiantes.forEach((estudiante, index) => { %>
+                                        <tr data-estudiante-id="<%= estudiante.estudiante_id %>">
+                                            <td class="text-center"><%= index + 1 %></td>
+                                            <td class="text-center"><%= estudiante.legajo %></td>
+                                            <td class="text-start"><%= estudiante.last_name %>, <%= estudiante.first_name %></td>
+                                            
+                                            <td><input type="number" step="0.01" min="1" max="10" name="informe1" class="form-control" value="<%= estudiante.informe1 || '' %>"></td>
+                                            <td><input type="number" step="0.01" min="1" max="10" name="informe2" class="form-control" value="<%= estudiante.informe2 || '' %>"></td>
+                                            <td>
+                                                <div class="input-group">
+                                                    <input type="number" step="0.01" min="1" max="10" name="cuatrimestre1" class="form-control" value="<%= estudiante.cuatrimestre1 || '' %>">
+                                                    <button class="btn btn-outline-secondary btn-sm" type="button" onclick="calcularPromedio(this, 'cuatrimestre1', ['informe1', 'informe2'])" title="Calcular promedio del 1er Cuatrimestre"><i class="bi bi-calculator"></i></button>
+                                                </div>
+                                            </td>
+                                            
+                                            <td><input type="number" step="0.01" min="1" max="10" name="informe3" class="form-control" value="<%= estudiante.informe3 || '' %>"></td>
+                                            <td><input type="number" step="0.01" min="1" max="10" name="informe4" class="form-control" value="<%= estudiante.informe4 || '' %>"></td>
+                                            <td>
+                                                <div class="input-group">
+                                                    <input type="number" step="0.01" min="1" max="10" name="cuatrimestre2" class="form-control" value="<%= estudiante.cuatrimestre2 || '' %>">
+                                                    <button class="btn btn-outline-secondary btn-sm" type="button" onclick="calcularPromedio(this, 'cuatrimestre2', ['informe3', 'informe4'])" title="Calcular promedio del 2do Cuatrimestre"><i class="bi bi-calculator"></i></button>
+                                                </div>
+                                            </td>
+                                            
+                                            <td>
+                                                <div class="input-group">
+                                                    <input type="number" step="0.01" min="1" max="10" name="final" class="form-control" value="<%= estudiante.final || '' %>">
+                                                    <button class="btn btn-outline-secondary btn-sm" type="button" onclick="calcularPromedio(this, 'final', ['cuatrimestre1', 'cuatrimestre2'])" title="Calcular Nota Final"><i class="bi bi-calculator"></i></button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    <% }); %>
+                                <% } else { %>
+                                    <tr>
+                                        <td colspan="10" class="text-center">No hay estudiantes en esta división.</td>
+                                    </tr>
+                                <% } %>
+                            </tbody>
+                        </table>
+                    </div>
+                    <% if (estudiantes.length > 0) { %>
+                        <div class="text-end mt-3">
+                             <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="bi bi-save-fill"></i> Guardar Cambios
+                            </button>
+                        </div>
+                    <% } %>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('form-calificaciones').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const updates = [];
+            const rows = document.querySelectorAll('tbody tr');
+            
+            rows.forEach(row => {
+                const estudianteId = row.dataset.estudianteId;
+                if (!estudianteId) return;
+
+                const inputs = row.querySelectorAll('input[type="number"]');
+                inputs.forEach(input => {
+                    const grade = input.value ? parseFloat(input.value) : null;
+                    if (grade !== null && (grade < 1 || grade > 10)) {
+                        alert(`La nota para ${input.name} debe estar entre 1 y 10.`);
+                        throw new Error('Nota fuera de rango');
+                    }
+                    updates.push({
+                        estudiante_id: estudianteId,
+                        grade_type: input.name,
+                        grade: grade
+                    });
+                });
+            });
+
+            try {
+                const response = await fetch('/api/grades', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        asignacion_id: <%= asignacion.id %>,
+                        updates
+                    })
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    alert('Calificaciones guardadas exitosamente.');
+                    window.location.reload();
+                } else {
+                    alert('Error al guardar: ' + result.message);
+                }
+            } catch (error) {
+                console.error('Error al guardar calificaciones:', error);
+                if (error.message !== 'Nota fuera de rango') {
+                    alert('Ocurrió un error de conexión.');
+                }
+            }
+        });
+
+        function calcularPromedio(btn, targetName, sourceNames) {
+            const row = btn.closest('tr');
+            if (!row) return;
+
+            let sum = 0;
+            let count = 0;
+
+            for (const sourceName of sourceNames) {
+                const input = row.querySelector(`input[name="${sourceName}"]`);
+                if (input && input.value) {
+                    const value = parseFloat(input.value);
+                    if (!isNaN(value)) {
+                        sum += value;
+                        count++;
+                    }
+                }
+            }
+
+            const targetInput = row.querySelector(`input[name="${targetName}"]`);
+            if (targetInput && count > 0 && count === sourceNames.length) {
+                const avg = (sum / count).toFixed(2);
+                targetInput.value = avg;
+            } else if (targetInput) {
+                alert('Asegúrese de que todas las notas necesarias estén completas para calcular el promedio.');
+            }
+        }
+    </script>
+</body>
+</html> 

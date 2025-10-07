@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Profesor - Colegio Ernesto Guevara</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <style>
+        .navbar-red {
+            background: linear-gradient(135deg, #8B0000, #dc3545) !important;
+        }
+        .btn-red {
+            background-color: #dc3545;
+            border-color: #dc3545;
+            color: white;
+        }
+        .btn-red:hover {
+            background-color: #a71d2a;
+            border-color: #a71d2a;
+            color: white;
+        }
+        .main-title {
+            color: #333;
+            font-weight: bold;
+            font-size: 2.5rem;
+        }
+        .section-title {
+            color: #666;
+            font-weight: 600;
+        }
+        .asignacion-card {
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 15px;
+            background: white;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+        }
+        .asignacion-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+        }
+        .modalidad-badge {
+            font-size: 0.8rem;
+            padding: 4px 8px;
+        }
+        footer {
+            background-color: #272530;
+            color: white;
+            padding: 2rem 0;
+            margin-top: 4rem;
+        }
+    </style>
+</head>
+<body class="bg-light">
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark navbar-red">
+        <div class="container">
+            <!-- Logo y nombre del sistema a la izquierda -->
+            <div class="d-flex align-items-center">
+                <i class="bi bi-mortarboard text-white me-2 fs-4"></i>
+                <span class="navbar-brand mb-0 h4 fw-bold text-white">Aula Digital</span>
+            </div>
+            
+            <!-- Información del usuario y botón cerrar sesión -->
+            <div class="navbar-nav ms-auto d-flex flex-row align-items-center">
+                <span class="text-white me-3">
+                    <i class="bi bi-person-badge"></i> 
+                    Prof. <%= user.first_name %> <%= user.last_name %>
+                </span>
+                <a class="nav-link text-white fw-bold" href="/logout">
+                    <i class="bi bi-box-arrow-right"></i> Cerrar Sesión
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Contenido Principal -->
+    <div class="container mt-4">
+        <!-- Título Principal -->
+        <div class="text-center mb-4">
+            <h1 class="main-title">Dashboard del Profesor</h1>
+            <% if (profesor) { %>
+                <p class="text-muted">
+                    <strong>Legajo:</strong> <%= profesor.legajo %> | 
+                    <strong>Título:</strong> <%= profesor.titulo %>
+                </p>
+            <% } %>
+        </div>
+
+        <!-- Sección de Asignaciones -->
+        <div class="mb-4">
+            <h2 class="section-title mb-4">
+                <i class="bi bi-book"></i> Mis Asignaciones Académicas
+            </h2>
+            
+            <% if (asignaciones && asignaciones.length > 0) { %>
+                <div class="row">
+                    <% asignaciones.forEach(asignacion => { %>
+                        <div class="col-md-6 col-lg-4">
+                            <div class="asignacion-card">
+                                <div class="d-flex justify-content-between align-items-start mb-3">
+                                    <h5 class="card-title mb-0">
+                                        <%= asignacion.materia_nombre %>
+                                    </h5>
+                                    <span class="badge bg-primary modalidad-badge">
+                                        <%= asignacion.materia_codigo %>
+                                    </span>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <p class="mb-1">
+                                        <i class="bi bi-building"></i>
+                                        <strong>Modalidad:</strong> <%= asignacion.modalidad_nombre %>
+                                    </p>
+                                    <p class="mb-1">
+                                        <i class="bi bi-mortarboard"></i>
+                                        <strong>Nivel:</strong> <%= asignacion.nivel_nombre %>
+                                    </p>
+                                    <p class="mb-1">
+                                        <i class="bi bi-door-open"></i>
+                                        <strong>División:</strong> <%= asignacion.division_nombre %>
+                                    </p>
+                                    <p class="mb-1">
+                                        <i class="bi bi-people"></i>
+                                        <strong>Estudiantes:</strong> <%= asignacion.total_estudiantes %>
+                                    </p>
+                                    <p class="mb-0">
+                                        <i class="bi bi-calendar"></i>
+                                        <strong>Año:</strong> <%= asignacion.año_lectivo %>
+                                    </p>
+                                </div>
+                                
+                                <div class="d-grid gap-2">
+                                    <a href="/dashboard/calificaciones/<%= asignacion.id %>" 
+                                       class="btn btn-red">
+                                        <i class="bi bi-clipboard-data"></i> Gestionar Calificaciones
+                                    </a>
+                                    <button class="btn btn-outline-secondary btn-sm"
+                                            onclick="verEstudiantes(<%= asignacion.id %>, '<%= asignacion.materia_nombre %>', '<%= asignacion.division_nombre %>')">
+                                        <i class="bi bi-people"></i> Ver Estudiantes
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    <% }); %>
+                </div>
+            <% } else { %>
+                <div class="alert alert-info text-center">
+                    <i class="bi bi-info-circle fs-1 mb-3"></i>
+                    <h4>No hay asignaciones</h4>
+                    <p>Actualmente no tienes materias asignadas para este año lectivo.</p>
+                    <p class="mb-0">Contacta con la administración para más información.</p>
+                </div>
+            <% } %>
+        </div>
+
+        <!-- Sección de Estadísticas Rápidas -->
+        <% if (asignaciones && asignaciones.length > 0) { %>
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="card text-white bg-primary">
+                    <div class="card-body text-center">
+                        <h5 class="card-title">Total Asignaciones</h5>
+                        <h2><%= asignaciones.length %></h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card text-white bg-success">
+                    <div class="card-body text-center">
+                        <h5 class="card-title">Total Estudiantes</h5>
+                        <h2>
+                            <%= asignaciones.reduce((total, asig) => total + parseInt(asig.total_estudiantes), 0) %>
+                        </h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card text-white bg-info">
+                    <div class="card-body text-center">
+                        <h5 class="card-title">Modalidades</h5>
+                        <h2>
+                            <%= [...new Set(asignaciones.map(asig => asig.modalidad_nombre))].length %>
+                        </h2>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <% } %>
+    </div>
+
+    <!-- Modal Ver Estudiantes -->
+    <div class="modal fade" id="modalVerEstudiantes" tabindex="-1" aria-labelledby="modalVerEstudiantesLabel" aria-hidden="true">
+      <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="modalVerEstudiantesLabel"><i class="bi bi-people-fill"></i> Lista de Estudiantes</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <h6 class="mb-3" id="infoAsignacionModal"></h6>
+            <div class="table-responsive">
+              <table class="table table-striped table-hover">
+                <thead class="table-dark">
+                  <tr>
+                    <th>N°</th>
+                    <th>Legajo</th>
+                    <th>Apellido y Nombre</th>
+                    <th>Email</th>
+                    <th>Tutor</th>
+                    <th>Tel. Tutor</th>
+                  </tr>
+                </thead>
+                <tbody id="listaEstudiantesTbody">
+                  <!-- Los estudiantes se cargarán aquí dinámicamente -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pie de Página -->
+    <footer>
+        <div class="container text-center">
+            <p class="mb-0">&copy; <%= new Date().getFullYear() %> Colegio Ernesto Guevara. Todos los derechos reservados.</p>
+            <p class="mb-0">Sistema de Gestión Educativa</p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        async function verEstudiantes(asignacionId, materiaNombre, divisionNombre) {
+            const tbody = document.getElementById('listaEstudiantesTbody');
+            const infoHeader = document.getElementById('infoAsignacionModal');
+            const modalTitle = document.getElementById('modalVerEstudiantesLabel');
+            
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center">Cargando...</td></tr>';
+            modalTitle.innerText = `Estudiantes de ${materiaNombre}`;
+            infoHeader.innerText = `División: ${divisionNombre}`;
+
+            const studentModal = new bootstrap.Modal(document.getElementById('modalVerEstudiantes'));
+            studentModal.show();
+    
+            try {
+                const response = await fetch(`/api/asignaciones/${asignacionId}/estudiantes`);
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.message || 'Error al cargar los datos.');
+                }
+        
+                const estudiantes = await response.json();
+                tbody.innerHTML = ''; 
+        
+                if (estudiantes.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" class="text-center">No hay estudiantes en esta división.</td></tr>';
+                } else {
+                    estudiantes.forEach((estudiante, index) => {
+                        const row = `
+                            <tr>
+                                <td>${index + 1}</td>
+                                <td>${estudiante.legajo || 'N/A'}</td>
+                                <td>${estudiante.last_name}, ${estudiante.first_name}</td>
+                                <td><a href="mailto:${estudiante.email}">${estudiante.email}</a></td>
+                                <td>${estudiante.tutor_nombre || 'N/A'}</td>
+                                <td>${estudiante.tutor_telefono || 'N/A'}</td>
+                            </tr>
+                        `;
+                        tbody.innerHTML += row;
+                    });
+                }
+            } catch (error) {
+                tbody.innerHTML = `<tr><td colspan="6" class="text-center text-danger"><strong>Error:</strong> ${error.message}</td></tr>`;
+            }
+        }
+        
+        // Agregar efecto de carga
+        document.addEventListener('DOMContentLoaded', function() {
+            const cards = document.querySelectorAll('.asignacion-card');
+            cards.forEach((card, index) => {
+                setTimeout(() => {
+                    card.style.opacity = '0';
+                    card.style.transform = 'translateY(20px)';
+                    card.style.transition = 'all 0.3s ease';
+                    
+                    setTimeout(() => {
+                        card.style.opacity = '1';
+                        card.style.transform = 'translateY(0)';
+                    }, 50);
+                }, index * 100);
+            });
+        });
+    </script>
+</body>
+</html> 

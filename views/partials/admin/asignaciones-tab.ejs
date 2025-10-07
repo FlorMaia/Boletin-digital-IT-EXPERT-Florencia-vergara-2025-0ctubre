@@ -1,0 +1,49 @@
+<div id="asignaciones" class="tab-content d-none">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="h4 mb-0">Asignaciones Profesor-Materia</h2>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#asignacionesModal">
+            <i class="bi bi-plus"></i> Nueva Asignación
+        </button>
+    </div>
+
+    <div class="row mb-3">
+        <div class="col-md-4">
+            <select class="form-select" id="filtroProfesor">
+                <option value="">Todos los profesores</option>
+            </select>
+        </div>
+        <div class="col-md-4">
+            <select class="form-select" id="filtroMateria">
+                <option value="">Todas las materias</option>
+            </select>
+        </div>
+        <div class="col-md-4">
+            <select class="form-select" id="filtroGrado">
+                <option value="">Todos los grados</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Profesor</th>
+                            <th>Materia</th>
+                            <th>Grado</th>
+                            <th>Sección</th>
+                            <th>Año Escolar</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="asignacionesTableBody">
+                        <!-- Los datos se cargarán dinámicamente -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div> 

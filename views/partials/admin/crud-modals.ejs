@@ -1,0 +1,318 @@
+<!-- ====================================== -->
+<!-- MODALES PARA CRUD DE ESTRUCTURA ACADÉMICA -->
+<!-- ====================================== -->
+
+<!-- MODAL MODALIDADES -->
+<div class="modal fade" id="modalidadModal" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-primary">
+                <h5 class="modal-title text-white" id="modalidadModalTitle">
+                    <i class="bi bi-mortarboard me-2"></i>Nueva Modalidad
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="modalidadForm" novalidate>
+                    <input type="hidden" id="modalidadId">
+                    
+                    <div class="mb-3">
+                        <label for="modalidadNombre" class="form-label">
+                            <i class="bi bi-type me-1"></i>Nombre de la Modalidad *
+                        </label>
+                        <input type="text" class="form-control" id="modalidadNombre" required 
+                               placeholder="Ej: Bachiller con orientación general">
+                        <div class="invalid-feedback">Por favor ingresa el nombre de la modalidad.</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="modalidadDescripcion" class="form-label">
+                            <i class="bi bi-text-paragraph me-1"></i>Descripción
+                        </label>
+                        <textarea class="form-control" id="modalidadDescripcion" rows="3" 
+                                  placeholder="Descripción opcional de la modalidad"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x me-1"></i>Cancelar
+                </button>
+                <button type="button" class="btn btn-primary" onclick="saveModalidad()">
+                    <i class="bi bi-check me-1"></i><span id="modalidadSaveText">Guardar</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL NIVELES -->
+<div class="modal fade" id="nivelModal" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success">
+                <h5 class="modal-title text-white" id="nivelModalTitle">
+                    <i class="bi bi-layers me-2"></i>Nuevo Nivel
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="nivelForm" novalidate>
+                    <input type="hidden" id="nivelId">
+                    
+                    <div class="mb-3">
+                        <label for="nivelModalidad" class="form-label">
+                            <i class="bi bi-mortarboard me-1"></i>Modalidad *
+                        </label>
+                        <select class="form-select" id="nivelModalidad" required>
+                            <option value="">Seleccionar modalidad</option>
+                        </select>
+                        <div class="invalid-feedback">Por favor selecciona una modalidad.</div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="nivelNumero" class="form-label">
+                                    <i class="bi bi-hash me-1"></i>Número de Grado *
+                                </label>
+                                <input type="number" class="form-control" id="nivelNumero" 
+                                       min="1" max="7" required placeholder="1">
+                                <div class="invalid-feedback">Ingresa un número de grado válido (1-7).</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="nivelNombre" class="form-label">
+                                    <i class="bi bi-type me-1"></i>Nombre del Nivel *
+                                </label>
+                                <input type="text" class="form-control" id="nivelNombre" required 
+                                       placeholder="Ej: 1° Año Bachiller">
+                                <div class="invalid-feedback">Por favor ingresa el nombre del nivel.</div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x me-1"></i>Cancelar
+                </button>
+                <button type="button" class="btn btn-success" onclick="saveNivel()">
+                    <i class="bi bi-check me-1"></i><span id="nivelSaveText">Guardar</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL DIVISIONES -->
+<div class="modal fade" id="divisionModal" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-warning">
+                <h5 class="modal-title text-dark" id="divisionModalTitle">
+                    <i class="bi bi-grid-3x3 me-2"></i>Nueva División
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="divisionForm" novalidate>
+                    <input type="hidden" id="divisionId">
+                    
+                    <div class="mb-3">
+                        <label for="divisionNivel" class="form-label">
+                            <i class="bi bi-layers me-1"></i>Nivel *
+                        </label>
+                        <select class="form-select" id="divisionNivel" required>
+                            <option value="">Seleccionar nivel</option>
+                        </select>
+                        <div class="invalid-feedback">Por favor selecciona un nivel.</div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="divisionLetra" class="form-label">
+                                    <i class="bi bi-type me-1"></i>División (Letra) *
+                                </label>
+                                <input type="text" class="form-control" id="divisionLetra" 
+                                       maxlength="2" required placeholder="A" style="text-transform: uppercase;">
+                                <div class="invalid-feedback">Ingresa la letra de la división.</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="divisionAula" class="form-label">
+                                    <i class="bi bi-door-open me-1"></i>Aula
+                                </label>
+                                <input type="text" class="form-control" id="divisionAula" 
+                                       placeholder="Ej: B11">
+                                <small class="form-text text-muted">Opcional</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="divisionNombreCompleto" class="form-label">
+                            <i class="bi bi-card-text me-1"></i>Nombre Completo
+                        </label>
+                        <input type="text" class="form-control" id="divisionNombreCompleto" readonly>
+                        <small class="form-text text-muted">Se genera automáticamente</small>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x me-1"></i>Cancelar
+                </button>
+                <button type="button" class="btn btn-warning text-dark" onclick="saveDivision()">
+                    <i class="bi bi-check me-1"></i><span id="divisionSaveText">Guardar</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL MATERIAS -->
+<div class="modal fade" id="materiaModal" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-primary">
+                <h5 class="modal-title text-white" id="materiaModalTitle">
+                    <i class="bi bi-book me-2"></i>Nueva Materia
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="materiaForm" novalidate>
+                    <input type="hidden" id="materiaId">
+                    
+                    <div class="mb-3">
+                        <label for="materiaModalidad" class="form-label">
+                            <i class="bi bi-mortarboard me-1"></i>Modalidad
+                        </label>
+                        <select class="form-select" id="materiaModalidad">
+                            <option value="">Materia común (todas las modalidades)</option>
+                        </select>
+                        <small class="form-text text-muted">Deja en blanco para materias comunes a todas las modalidades</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="materiaNombre" class="form-label">
+                            <i class="bi bi-type me-1"></i>Nombre de la Materia *
+                        </label>
+                        <input type="text" class="form-control" id="materiaNombre" required 
+                               placeholder="Ej: Matemáticas">
+                        <div class="invalid-feedback">Por favor ingresa el nombre de la materia.</div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="materiaCodigo" class="form-label">
+                                    <i class="bi bi-hash me-1"></i>Código
+                                </label>
+                                <input type="text" class="form-control" id="materiaCodigo" 
+                                       placeholder="Ej: MAT101">
+                                <small class="form-text text-muted">Opcional</small>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="materiaHoras" class="form-label">
+                                    <i class="bi bi-clock me-1"></i>Horas Semanales
+                                </label>
+                                <input type="number" class="form-control" id="materiaHoras" 
+                                       min="1" max="40" placeholder="Ej: 4">
+                                <small class="form-text text-muted">Opcional</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="materiaDescripcion" class="form-label">
+                            <i class="bi bi-text-paragraph me-1"></i>Descripción
+                        </label>
+                        <textarea class="form-control" id="materiaDescripcion" rows="3" 
+                                  placeholder="Descripción opcional de la materia"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x me-1"></i>Cancelar
+                </button>
+                <button type="button" class="btn btn-primary" onclick="materiaSave()">
+                    <i class="bi bi-check me-1"></i><span id="materiaSaveText">Guardar</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL CONFIRMACIÓN ELIMINACIÓN -->
+<div class="modal fade" id="deleteAcademicoModal" tabindex="-1">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header bg-danger">
+                <h5 class="modal-title text-white">
+                    <i class="bi bi-exclamation-triangle me-2"></i>Confirmar Eliminación
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center">
+                <i class="bi bi-exclamation-triangle text-danger" style="font-size: 3rem;"></i>
+                <h6 class="mt-3">¿Estás seguro?</h6>
+                <p class="text-muted">Se eliminará permanentemente:</p>
+                <p class="fw-bold" id="deleteAcademicoName"></p>
+                <input type="hidden" id="deleteAcademicoFullName">
+                <small class="text-muted">Esta acción no se puede deshacer.</small>
+            </div>
+            <div class="modal-footer justify-content-center">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x me-1"></i>Cancelar
+                </button>
+                <button type="button" class="btn btn-danger" onclick="confirmDeleteAcademico()">
+                    <i class="bi bi-trash me-1"></i>Eliminar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL CONFIRMACIÓN ELIMINACIÓN MATERIA -->
+<div class="modal fade" id="deleteMateriaModal" tabindex="-1">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header bg-danger">
+                <h5 class="modal-title text-white">
+                    <i class="bi bi-exclamation-triangle me-2"></i>Confirmar Eliminación
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center">
+                <i class="bi bi-book text-danger" style="font-size: 3rem;"></i>
+                <h6 class="mt-3">¿Estás seguro?</h6>
+                <p class="text-muted">Se eliminará permanentemente la materia:</p>
+                <p class="fw-bold" id="deleteMateriaName"></p>
+                <input type="hidden" id="deleteMateriaId">
+                <small class="text-muted">Esta acción no se puede deshacer.</small>
+            </div>
+            <div class="modal-footer justify-content-center">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x me-1"></i>Cancelar
+                </button>
+                <button type="button" class="btn btn-danger" onclick="materiaConfirmDelete()">
+                    <i class="bi bi-trash me-1"></i>Eliminar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// ELIMINADO: Funciones duplicadas que están en crud-academico.js
+// ELIMINADO: Event listeners que pueden causar conflictos
+console.log('✅ Modales CRUD cargados - Sin funciones duplicadas');
+// Elimina cualquier definición de window.editDivision aquí. La función debe estar solo en public/js/crud-academico.js
+</script>

@@ -1,0 +1,142 @@
+<div id="academico-content" class="tab-content">
+    <!-- Header de la sección -->
+    <div class="page-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="page-title">
+                    <i class="bi bi-building me-2 text-primary"></i>
+                    Estructura Académica
+                </h1>
+                <p class="text-muted mb-0">Gestiona modalidades, niveles y divisiones del colegio</p>
+            </div>
+            <div class="dropdown">
+                <button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                    <i class="bi bi-plus me-1"></i> Agregar
+                </button>
+                <ul class="dropdown-menu">
+                    <li><a class="dropdown-item" href="#" onclick="showCreateModalidadModal()">
+                        <i class="bi bi-mortarboard me-2"></i>Nueva Modalidad
+                    </a></li>
+                    <li><a class="dropdown-item" href="#" onclick="showCreateNivelModal()">
+                        <i class="bi bi-layers me-2"></i>Nuevo Nivel
+                    </a></li>
+                    <li><a class="dropdown-item" href="#" onclick="showCreateDivisionModal()">
+                        <i class="bi bi-grid-3x3 me-2"></i>Nueva División
+                    </a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Estadísticas rápidas -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="stats-card stats-primary d-flex justify-content-between align-items-center">
+                <div class="stats-info">
+                    <h3 id="total-modalidades" class="stats-number">0</h3>
+                    <p class="stats-label">Modalidades</p>
+                </div>
+                <div class="stats-icon">
+                    <i class="bi bi-mortarboard"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card stats-success d-flex justify-content-between align-items-center">
+                <div class="stats-info">
+                    <h3 id="total-niveles" class="stats-number">0</h3>
+                    <p class="stats-label">Niveles/Grados</p>
+                </div>
+                <div class="stats-icon">
+                    <i class="bi bi-layers"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card stats-warning d-flex justify-content-between align-items-center">
+                <div class="stats-info">
+                    <h3 id="total-divisiones" class="stats-number">0</h3>
+                    <p class="stats-label">Divisiones</p>
+                </div>
+                <div class="stats-icon">
+                    <i class="bi bi-grid-3x3"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card stats-info d-flex justify-content-between align-items-center">
+                <div class="stats-info">
+                    <h3 id="total-estudiantes-estructura" class="stats-number">0</h3>
+                    <p class="stats-label">Total Estudiantes</p>
+                </div>
+                <div class="stats-icon">
+                    <i class="bi bi-people"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navegación de migas de pan -->
+    <nav aria-label="breadcrumb" id="estructura-breadcrumb" style="display: none;">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="#" onclick="showModalidadesView()" class="text-decoration-none">
+                    <i class="bi bi-mortarboard me-1"></i>Modalidades
+                </a>
+            </li>
+        </ol>
+    </nav>
+
+    <!-- VISTA DE MODALIDADES (por defecto) -->
+    <div id="modalidades-view" class="estructura-view">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h4 class="mb-0">
+                <i class="bi bi-mortarboard me-2 text-primary"></i>Modalidades Educativas
+            </h4>
+            <button class="btn btn-success" onclick="showCreateModalidadModal()">
+                <i class="bi bi-plus me-1"></i> Nueva Modalidad
+            </button>
+        </div>
+        
+        <div class="row" id="modalidades-container">
+            <div class="col-12 text-center py-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Cargando...</span>
+                </div>
+                <p class="mt-2 text-muted">Cargando modalidades...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- VISTA DE NIVELES -->
+    <div id="niveles-view" class="estructura-view" style="display: none;">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h4 class="mb-0" id="niveles-title">
+                <i class="bi bi-layers me-2 text-success"></i>Niveles y Grados
+            </h4>
+            <button class="btn btn-success" onclick="showCreateNivelModal()">
+                <i class="bi bi-plus me-1"></i> Nuevo Nivel
+            </button>
+        </div>
+        
+        <div class="row" id="niveles-container">
+            <!-- Contenido de niveles -->
+        </div>
+    </div>
+
+    <!-- VISTA DE DIVISIONES -->
+    <div id="divisiones-view" class="estructura-view" style="display: none;">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h4 class="mb-0" id="divisiones-title">
+                <i class="bi bi-grid-3x3 me-2 text-warning"></i>Divisiones y Secciones
+            </h4>
+            <button class="btn btn-warning" onclick="showCreateDivisionModal()">
+                <i class="bi bi-plus me-1"></i> Nueva División
+            </button>
+        </div>
+        
+        <div class="row" id="divisiones-container">
+            <!-- Contenido de divisiones -->
+        </div>
+    </div>
+</div> 

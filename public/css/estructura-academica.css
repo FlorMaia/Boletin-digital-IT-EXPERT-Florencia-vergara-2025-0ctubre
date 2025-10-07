@@ -1,0 +1,197 @@
+/* =========================================
+   ESTRUCTURA ACADÉMICA - CSS ESPECÍFICO
+   ========================================= */
+
+/* === MODALIDADES === */
+#modalidades-container .card-header.bg-primary {
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%) !important;
+    color: #ffffff !important;
+    border: none !important;
+    padding: 1.25rem !important;
+}
+
+#modalidades-container .card-header.bg-primary * {
+    color: #ffffff !important;
+}
+
+#modalidades-container .card-header.bg-primary h6 {
+    color: #ffffff !important;
+    font-weight: 600 !important;
+}
+
+#modalidades-container .card-header.bg-primary .btn {
+    background-color: rgba(255, 255, 255, 0.2) !important;
+    border: rgba(255, 255, 255, 0.3) !important;
+    color: #ffffff !important;
+}
+
+#modalidades-container .card {
+    border-left: 4px solid #007bff !important;
+    transition: all 0.3s ease !important;
+}
+
+#modalidades-container .card:hover {
+    transform: translateY(-5px) !important;
+    box-shadow: 0 10px 25px rgba(0, 123, 255, 0.15) !important;
+}
+
+/* === NIVELES === */
+#niveles-container .card-header.bg-success {
+    background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%) !important;
+    color: #ffffff !important;
+    border: none !important;
+    padding: 1.25rem !important;
+}
+
+#niveles-container .card-header.bg-success * {
+    color: #ffffff !important;
+}
+
+#niveles-container .card-header.bg-success h6 {
+    color: #ffffff !important;
+    font-weight: 600 !important;
+}
+
+#niveles-container .card-header.bg-success .btn {
+    background-color: rgba(255, 255, 255, 0.2) !important;
+    border: rgba(255, 255, 255, 0.3) !important;
+    color: #ffffff !important;
+}
+
+#niveles-container .card {
+    border-left: 4px solid #28a745 !important;
+    transition: all 0.3s ease !important;
+}
+
+#niveles-container .card:hover {
+    transform: translateY(-5px) !important;
+    box-shadow: 0 10px 25px rgba(40, 167, 69, 0.15) !important;
+}
+
+/* === DIVISIONES === */
+#divisiones-container .card-header.bg-warning {
+    background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%) !important;
+    color: #212529 !important;
+    border: none !important;
+    padding: 1.25rem !important;
+}
+
+#divisiones-container .card-header.bg-warning * {
+    color: #212529 !important;
+}
+
+#divisiones-container .card-header.bg-warning h6 {
+    color: #212529 !important;
+    font-weight: 600 !important;
+}
+
+#divisiones-container .card-header.bg-warning .btn {
+    background-color: rgba(0, 0, 0, 0.1) !important;
+    border: rgba(0, 0, 0, 0.2) !important;
+    color: #212529 !important;
+}
+
+#divisiones-container .card {
+    border-left: 4px solid #ffc107 !important;
+    transition: all 0.3s ease !important;
+}
+
+#divisiones-container .card:hover {
+    transform: translateY(-5px) !important;
+    box-shadow: 0 10px 25px rgba(255, 193, 7, 0.15) !important;
+}
+
+/* === NAVEGACIÓN (BREADCRUMBS) === */
+#estructura-breadcrumb .breadcrumb {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%) !important;
+    border: 1px solid #dee2e6 !important;
+    border-radius: 10px !important;
+    padding: 0.75rem 1.25rem !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05) !important;
+}
+
+#estructura-breadcrumb .breadcrumb-item a {
+    color: #007bff !important;
+    text-decoration: none !important;
+    font-weight: 500 !important;
+    transition: color 0.3s ease !important;
+}
+
+#estructura-breadcrumb .breadcrumb-item a:hover {
+    color: #0056b3 !important;
+    text-decoration: underline !important;
+}
+
+/* === ESTADÍSTICAS === */
+.estructura-view .fw-bold {
+    font-size: 1.8rem !important;
+    font-weight: 800 !important;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+}
+
+.estructura-view .text-primary {
+    color: #007bff !important;
+}
+
+.estructura-view .text-success {
+    color: #28a745 !important;
+}
+
+.estructura-view .text-warning {
+    color: #ffc107 !important;
+}
+
+.estructura-view .text-info {
+    color: #17a2b8 !important;
+}
+
+/* === BADGES === */
+.badge.bg-primary {
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%) !important;
+    box-shadow: 0 2px 8px rgba(0, 123, 255, 0.3) !important;
+}
+
+.badge.bg-success {
+    background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%) !important;
+    box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3) !important;
+}
+
+.badge.bg-warning {
+    background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%) !important;
+    color: #212529 !important;
+    box-shadow: 0 2px 8px rgba(255, 193, 7, 0.3) !important;
+}
+
+.badge.bg-info {
+    background: linear-gradient(135deg, #17a2b8 0%, #138496 100%) !important;
+    box-shadow: 0 2px 8px rgba(23, 162, 184, 0.3) !important;
+}
+
+/* === ANIMACIONES === */
+.estructura-view {
+    animation: fadeInUp 0.5s ease-out !important;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* === RESPONSIVE === */
+@media (max-width: 768px) {
+    #modalidades-container .card,
+    #niveles-container .card,
+    #divisiones-container .card {
+        margin-bottom: 1rem !important;
+    }
+    
+    .estructura-view .fw-bold {
+        font-size: 1.5rem !important;
+    }
+} 

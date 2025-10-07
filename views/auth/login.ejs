@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Iniciar Sesión - Colegio Ernesto Guevara</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #000000 0%, #f0061e 100%);
+            min-height: 100vh;
+        }
+        .login-card {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        .card-header-red {
+            background-color: #dc3545;
+            border-radius: 15px 15px 0 0;
+        }
+        .btn-red {
+            background-color: #dc3545;
+            border-color: #dc3545;
+        }
+        .btn-red:hover {
+            background-color: #a71d2a;
+            border-color: #a71d2a;
+        }
+        .password-toggle {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            z-index: 10;
+        }
+        .password-input-container {
+            position: relative;
+        }
+        
+        /* Fondo blanco simple para el formulario */
+        .card-body {
+            background: white;
+            padding: 2rem !important;
+            border-radius: 0 0 15px 15px;
+        }
+        
+        /* Formulario sin estilos adicionales */
+        .card-body form {
+            background: transparent;
+            padding: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="row justify-content-center min-vh-100 align-items-center">
+            <div class="col-md-6 col-lg-4">
+                <div class="card login-card">
+                    <div class="card-header card-header-red text-white text-center py-4">
+                        <h3 class="mb-1">
+                            <i class="bi bi-mortarboard"></i> 
+                            Colegio Ernesto Guevara
+                        </h3>
+                        <p class="mb-0">Iniciar Sesión</p>
+                    </div>
+                    <div class="card-body p-4">
+                        <!-- Flash Messages -->
+                        <% if (locals.success_msg && locals.success_msg.length > 0) { %>
+                            <div class="alert alert-success">
+                                <i class="bi bi-check-circle"></i> <%= locals.success_msg %>
+                            </div>
+                        <% } %>
+                        
+                        <% if (locals.error_msg && locals.error_msg.length > 0) { %>
+                            <div class="alert alert-danger">
+                                <i class="bi bi-exclamation-triangle"></i> <%= locals.error_msg %>
+                            </div>
+                        <% } %>
+
+                        <% if (locals.errors && locals.errors.length > 0) { %>
+                            <div class="alert alert-danger">
+                                <ul class="mb-0">
+                                    <% locals.errors.forEach(error => { %>
+                                        <li><%= error.msg %></li>
+                                    <% }); %>
+                                </ul>
+                            </div>
+                        <% } %>
+
+                        <form action="/login" method="POST">
+                            <div class="mb-3">
+                                <label for="email" class="form-label fw-bold">
+                                    <i class="bi bi-envelope text-danger"></i> Gmail
+                                </label>
+                                <input type="email" class="form-control form-control-lg" id="email" name="email" 
+                                       value="<%= email %>" placeholder="Ingresa tu gmail" required>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="password" class="form-label fw-bold">
+                                    <i class="bi bi-lock text-danger"></i> Contraseña
+                                </label>
+                                <div class="password-input-container">
+                                    <input type="password" class="form-control form-control-lg" id="password" name="password" 
+                                           placeholder="Ingresa tu contraseña" required>
+                                    <i class="bi bi-eye password-toggle" id="togglePassword"></i>
+                                </div>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-red btn-lg w-100 text-white fw-bold">
+                                <i class="bi bi-box-arrow-in-right"></i> Iniciar Sesión
+                            </button>
+                        </form>
+                        
+                        <hr>
+                        <div class="text-center">
+                            <p class="mb-2">¿No tienes cuenta? 
+                                <a href="/register" class="text-danger fw-bold text-decoration-none">Regístrate aquí</a>
+                            </p>
+                            <a href="/" class="btn btn-outline-danger">
+                                <i class="bi bi-house"></i> Volver al inicio
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Toggle password visibility
+        const togglePassword = document.getElementById('togglePassword');
+        const passwordField = document.getElementById('password');
+        
+        togglePassword.addEventListener('click', function() {
+            const type = passwordField.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordField.setAttribute('type', type);
+            
+            // Toggle icon
+            this.classList.toggle('bi-eye');
+            this.classList.toggle('bi-eye-slash');
+        });
+    </script>
+</body>
+</html> 
